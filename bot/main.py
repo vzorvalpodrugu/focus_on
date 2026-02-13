@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from container import get_container
-from punq import Container
 from handlers.start_handler import StartHandler
 
 load_dotenv()
