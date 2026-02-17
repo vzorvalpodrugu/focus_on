@@ -48,7 +48,6 @@ class TeacherStudent(Base):
     teacher_id = Column(Integer, ForeignKey('users.id'))
 
 
-
 class Subject(Base):
     __tablename__ = 'subjects'
 
@@ -56,6 +55,7 @@ class Subject(Base):
     name = Column(Enum(SubjectEnum), unique=True, nullable=False)
 
     lessons = relationship("Lesson", back_populates='subject')
+
 
 class UserSubject(Base):
     __tablename__ = 'user_subject'
@@ -82,6 +82,7 @@ class Homework(Base):
     lesson = relationship('Lesson', back_populates='homework')
     student = relationship('User', foreign_keys=[student_id])
     teacher = relationship('User', foreign_keys=[teacher_id])
+
 
 class Lesson(Base):
     __tablename__ = 'lessons'

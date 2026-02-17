@@ -1,0 +1,23 @@
+from BaseRepository import BaseRepository
+from bot.models import User
+from sqlalchemy import select
+
+class UserRepository(BaseRepository):
+
+    async def get_by_tg_id(self, tg_id: int) -> User | None:
+        async with self.session_factory() as session:
+            result = await session.execute(select(User).where(User.tg_id==tg_id))
+
+            return result.scalar_one_or_none()
+
+    async def get_teachers(self):
+        async with self.session_factory() as session:
+            result = await session.execute(select(User).where(User.role=='teacher'))
+
+            return list(result.scalars().all())
+
+    async def get_students(self):
+        async with self.session_factory() as session:
+            result = await session.execute(select(User).where(User.role == 'student'))
+
+            return list(result.scalars().all())
