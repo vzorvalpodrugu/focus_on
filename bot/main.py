@@ -6,6 +6,9 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from container import get_container
 from handlers.start_handler import StartHandler
+from bot.repositories.UserRepository import UserRepository
+from bot.repositories.SubjectRepository import SubjectRepository
+from database import async_session_maker
 
 load_dotenv()
 
@@ -21,6 +24,7 @@ async def main():
     container = get_container()
 
     start_handler = container.resolve(StartHandler)
+
     dp.include_router(start_handler.router)
 
     async with bot:

@@ -7,7 +7,6 @@ from datetime import datetime
 class Base(AsyncAttrs, DeclarativeBase):
     pass
 
-
 class UserRole(str, enum.Enum):
     TEACHER = 'teacher'
     STUDENT = 'student'
@@ -24,7 +23,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     tg_id = Column(Integer, unique=True, nullable=False, index=True)
     name = Column(String(30), nullable=False)
-    class_number = Column(Integer)
+    class_number = Column(Integer, nullable=True)
     role = Column(Enum(UserRole), nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.now())
 
@@ -78,7 +77,7 @@ class Homework(Base):
     topics = Column(String(100), nullable=False)
     pdf_file_id = Column(String(200), nullable=False)
 
-    subject = relationship('Subject', back_populates='homeworks')
+    subject = relationship('Subject')
     lesson = relationship('Lesson', back_populates='homework')
     student = relationship('User', foreign_keys=[student_id])
     teacher = relationship('User', foreign_keys=[teacher_id])

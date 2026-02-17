@@ -4,7 +4,7 @@ import asyncpg
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-from models import Base
+from bot.models import Base
 import dotenv
 import os
 import logging
