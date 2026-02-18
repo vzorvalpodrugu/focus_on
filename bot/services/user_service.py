@@ -1,8 +1,10 @@
-from bot.services.BaseService import BaseSevice
+from bot.services.base_service import BaseService
 from bot.models import User
-from bot.repositories.UserRepository import UserRepository
+from bot.repositories.user_repository import UserRepository
 
-class UserService(BaseSevice):
+class UserService(BaseService):
+    def __init__(self, repo):
+        super().__init__(repo)
 
     async def get_by_tg_id(self, tg_id: int) -> User:
         return await self.repo.get_by_tg_id(tg_id)
@@ -16,7 +18,7 @@ class UserService(BaseSevice):
                 "message" : "Вы уже зарегистрированы!"
             }
         else:
-            new_user = await self.repo.create_user(
+            await self.repo.create_user(
                 tg_id=tg_id,
                 name=name,
                 role=role,
@@ -25,5 +27,5 @@ class UserService(BaseSevice):
 
             return {
                 "success": True,
-                "message": "Вы успешно зарегистрированы!"
+                "message": "✅ Вы успешно зарегистрированы!"
             }

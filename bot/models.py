@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, BigInteger
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, relationship
 import enum
@@ -21,7 +21,7 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
-    tg_id = Column(Integer, unique=True, nullable=False, index=True)
+    tg_id = Column(BigInteger, unique=True, nullable=False, index=True)
     name = Column(String(30), nullable=False)
     class_number = Column(Integer, nullable=True)
     role = Column(Enum(UserRole), nullable=False)

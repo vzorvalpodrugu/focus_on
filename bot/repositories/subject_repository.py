@@ -1,4 +1,4 @@
-from bot.repositories.BaseRepository import BaseRepository
+from bot.repositories.base_repository import BaseRepository
 from sqlalchemy import select
 from bot.models import Subject
 

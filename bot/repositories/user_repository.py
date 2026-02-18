@@ -1,6 +1,6 @@
 import asyncio
 from bot.database import async_session_maker
-from bot.repositories.BaseRepository import BaseRepository
+from bot.repositories.base_repository import BaseRepository
 from bot.models import User
 from sqlalchemy import select
 
@@ -35,7 +35,7 @@ class UserRepository(BaseRepository):
 
             session.add(user)
             await session.commit()
-            await session.refresh()
+            await session.refresh(user)
 
             return user
 
