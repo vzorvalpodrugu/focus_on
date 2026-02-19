@@ -24,20 +24,31 @@ def class_number_keyboard() -> InlineKeyboardMarkup:
 
     return builder.as_markup()
 
-async def subjects_keyboard() -> InlineKeyboardMarkup:
+async def subjects_keyboard(selected_ids: list[int] = None) -> InlineKeyboardMarkup:
+    """
+    selected_ids - список ID уже выбранных предметов
+    """
     builder = InlineKeyboardBuilder()
 
     subj_repo = SubjectRepository(async_session_maker)
     subjects = await subj_repo.get_subjects()
+    selected_ids = selected_ids or []
 
-    for i in range (1, len(subjects)+1):
-        builder.button(text=f'{str(subjects[i-1].name.value)}', callback_data=f'sub_{i}')
+    for subject in subjects:
+        # Ставим галочку, если предмет уже выбран
+        prefix = "✅ " if subject.id in selected_ids else ""
+        builder.button(
+            text=f"{prefix}{subject.name.value}",
+            callback_data=f"subject_{subject.id}"
+        )
 
-    builder.adjust(1)
+    # Кнопки управления
+    builder.button(text="✅ Готово", callback_data="subjects_done")
+    builder.button(text="◀️ Назад", callback_data="back_to_start")
 
+    # Расположение: предметы по 2 в ряд, потом кнопки управления
+    builder.adjust(2, 2, 1, 1)  # можно настроить под себя
     return builder.as_markup()
-
-
 
 
 def back_keyboard() -> InlineKeyboardMarkup:

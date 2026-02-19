@@ -59,7 +59,7 @@ class Subject(Base):
 class UserSubject(Base):
     __tablename__ = 'user_subject'
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True) #зачем это мне вообще
     user_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"))
     subject_id = Column(Integer, ForeignKey('subjects.id', ondelete="CASCADE"))
 

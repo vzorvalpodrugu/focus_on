@@ -5,3 +5,4 @@ class RegisterStates(StatesGroup):
     choosing_role = State()
     entering_name = State()
     choosing_class = State()
+    choosing_subjects = State()
