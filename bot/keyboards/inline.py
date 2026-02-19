@@ -1,5 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from bot.repositories.subject_repository import SubjectRepository
+from bot.database import async_session_maker
 
 def role_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура выбора роли"""
@@ -21,6 +23,22 @@ def class_number_keyboard() -> InlineKeyboardMarkup:
     builder.adjust(3, 3, 1, 1)
 
     return builder.as_markup()
+
+async def subjects_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+
+    subj_repo = SubjectRepository(async_session_maker)
+    subjects = await subj_repo.get_subjects()
+
+    for i in range (1, len(subjects)+1):
+        builder.button(text=f'{str(subjects[i-1].name.value)}', callback_data=f'sub_{i}')
+
+    builder.adjust(1)
+
+    return builder.as_markup()
+
+
+
 
 def back_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура с кнопкой назад"""
