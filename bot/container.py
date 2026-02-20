@@ -1,6 +1,8 @@
 from punq import Container, Scope
 
 from bot.database import async_session_maker
+from bot.handlers.main_teacher_handler import MainTeacherHandler
+from bot.repositories.teacher_student_repo import TeacherStudentRepository
 from bot.repositories.user_repository import UserRepository
 from bot.repositories.subject_repository import SubjectRepository
 from bot.repositories.user_subject_repo import UserSubjectRepository
@@ -37,12 +39,19 @@ def get_container() -> Container:
         scope = Scope.singleton
     )
 
+    container.register(
+        TeacherStudentRepository,
+        instance=TeacherStudentRepository(session_factory = container.resolve('session_factory')),
+        scope=Scope.singleton
+    )
+
     # Register Services
     container.register(
         UserService,
         instance=UserService(
             user_repo=container.resolve(UserRepository),
-            user_subject_repo=container.resolve(UserSubjectRepository)
+            user_subject_repo=container.resolve(UserSubjectRepository),
+            teacher_student_repo=container.resolve(TeacherStudentRepository)
         ),
         scope=Scope.singleton
     )
@@ -51,6 +60,12 @@ def get_container() -> Container:
     container.register(
         StartHandler,
         instance=StartHandler(user_service=container.resolve(UserService)),
+        scope=Scope.singleton
+    )
+
+    container.register(
+        MainTeacherHandler,
+        instance=MainTeacherHandler(user_service=container.resolve(UserService)),
         scope=Scope.singleton
     )
 

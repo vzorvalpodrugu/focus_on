@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
+from bot.handlers.main_teacher_handler import MainTeacherHandler
 from bot.services.user_service import UserService
 from bot.container import get_container
 from bot.handlers.start_handler import StartHandler
@@ -23,8 +24,10 @@ async def main():
     container = get_container()
 
     start_handler = container.resolve(StartHandler)
+    teacher_handler = container.resolve(MainTeacherHandler)
 
     dp.include_router(start_handler.router)
+    dp.include_router(teacher_handler.router)
 
     async with bot:
         await dp.start_polling(

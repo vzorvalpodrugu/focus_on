@@ -5,6 +5,8 @@ from bot.database import async_session_maker
 from bot.handlers.base_handler import BaseHandler
 from aiogram.filters import Command
 
+from bot.keyboards.teacher_inline import teacher_inline
+from bot.keyboards.student_inline import student_inline
 from bot.repositories.subject_repository import SubjectRepository
 from bot.states.register import RegisterStates
 from bot.keyboards.inline import role_keyboard, back_keyboard, class_number_keyboard, subjects_keyboard
@@ -20,6 +22,9 @@ class StartHandler(BaseHandler):
     async def get_subjects_name(state: FSMContext):
         data = await state.get_data()
         subj_ids = data.get('selected_subjects')
+
+        if not subj_ids:
+            subj_ids = []
 
         subj_repo = SubjectRepository(async_session_maker)
         subjects = await subj_repo.get_by_ids(subj_ids)
@@ -37,11 +42,15 @@ class StartHandler(BaseHandler):
 
             user = await self.user_service.get_by_tg_id(tg_id=message.from_user.id)
 
+
             if user:
                 role = 'учитель' if user.role == 'teacher' else 'ученик'
+
+                keyboard = await teacher_inline() if user.role == 'teacher' else await student_inline()
                 await message.answer(
                      f"👋 С возвращением, {user.name}!\n"
-                    f"Вы зарегистрированы как {role}."
+                    f"Вы зарегистрированы как {role}.",
+                    reply_markup=keyboard
                 )
                 return
 
@@ -167,6 +176,18 @@ class StartHandler(BaseHandler):
                 parse_mode='HTML'
             )
         elif type(target) == Message:
-            await target.answer(result['message'])
+            await target.answer(
+                f'<b>{result['message']}</b>' +
+                '\n\n📋 <b>Ваш профиль:</b>'
+                f"\n👤 <b>Имя:</b> {data['name']}"
+                f"\n🎭 <b>Статус:</b> 👨‍🎓 {data['role']}",
+                parse_mode='HTML',
+            )
+            await target.answer(
+                f'<b>{data['name']}</b>, выберите действие:\n\n',
+                parse_mode='HTML',
+                reply_markup = await teacher_inline()
+            )
+
 
         await state.clear()

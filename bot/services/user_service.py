@@ -3,8 +3,9 @@ from bot.models import User
 from bot.repositories.user_repository import UserRepository
 
 class UserService(BaseService):
-    def __init__(self, user_repo, user_subject_repo):
+    def __init__(self, user_repo, user_subject_repo, teacher_student_repo):
         self.user_subject_repo = user_subject_repo
+        self.teacher_student_repo = teacher_student_repo
         super().__init__(user_repo)
 
     async def get_by_tg_id(self, tg_id: int) -> User:
