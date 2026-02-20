@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, BigInteger
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, BigInteger, UniqueConstraint
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, relationship
 import enum
@@ -45,7 +45,11 @@ class TeacherStudent(Base):
     id = Column(Integer, primary_key=True)
     student_id = Column(Integer, ForeignKey('users.id'))
     teacher_id = Column(Integer, ForeignKey('users.id'))
+    subject_id = Column(Integer, ForeignKey('subjects.id'))
 
+    __table_args__ = (
+        UniqueConstraint('student_id', 'teacher_id', 'subject_id', name='unique_teacher_student_subject'),
+    )
 
 class Subject(Base):
     __tablename__ = 'subjects'

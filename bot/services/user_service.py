@@ -29,9 +29,7 @@ class UserService(BaseService):
                 class_number=class_number
             )
 
-            print(role)
-            if role == 'student' and subject_ids:
-                print(new_user.id)
+            if subject_ids:
                 await self.user_subject_repo.add_subjects_to_student(new_user.id, subject_ids)
 
             return {

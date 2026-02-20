@@ -1,6 +1,6 @@
 from bot.repositories.base_repository import BaseRepository
 from sqlalchemy import select, and_
-from bot.models import UserSubject
+from bot.models import UserSubject, Subject, User
 from typing import List
 
 class UserSubjectRepository(BaseRepository):
@@ -30,10 +30,28 @@ class UserSubjectRepository(BaseRepository):
             for subj_id in subject_ids:
                 await self.add_subject_to_student(student_id, subj_id)
 
-    async def get_user_subjects(self, student_id) -> list:
+    async def get_user_subjects(self, user_id : int) -> list:
         async with self.session_factory() as session:
             data = await session.execute(
-                select(UserSubject).where(UserSubject.user_id == student_id)
+                select(Subject)
+                .join(UserSubject, Subject.id == UserSubject.subject_id)
+                .where(UserSubject.user_id == user_id)
             )
 
             return list(data.scalars().all())
+
+    async def get_users_by_subject_id(self, subject_id : int):
+        async with self.session_factory() as session:
+            result = await session.execute(
+                select(User)
+                .join(UserSubject, UserSubject.user_id == User.id)
+                .where(
+                    and_(
+                        UserSubject.subject_id == subject_id,
+                        User.role == 'student'
+                    )
+                )
+            )
+
+            return list(result.scalars().all())
+

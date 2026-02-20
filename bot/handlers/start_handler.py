@@ -85,16 +85,18 @@ class StartHandler(BaseHandler):
 
             await state.update_data(name=name)
             data = await state.get_data()
-
-            if data['role'] == 'teacher':
-                await self._finish_registration(message, state)
-            else:
+            if data['role'] == 'student':
                 await state.set_state(RegisterStates.choosing_class)
                 await message.answer(
                     f"📚 {name}, в каком вы классе?",
                     reply_markup=class_number_keyboard()
                 )
-
+            else:
+                await state.set_state(RegisterStates.choosing_subjects)
+                await message.answer(
+                    f"📚 {name}, выберите, какие предметы Вы будете преподавать?",
+                    reply_markup=await subjects_keyboard()
+                )
         # 4. Выбор класса
         @self.router.callback_query(RegisterStates.choosing_class, F.data.startswith('class_'))
         async def process_class(callback: CallbackQuery, state: FSMContext):
@@ -149,24 +151,25 @@ class StartHandler(BaseHandler):
             await callback.answer()
 
     # 7. Завершение регистрации
-    async def _finish_registration(self, target, state: FSMContext):
+    async def _finish_registration(self, callback: CallbackQuery, state: FSMContext):
         data = await state.get_data()
 
         result = await self.user_service.register(
-            tg_id=target.from_user.id,
+            tg_id=callback.from_user.id,
             name=data['name'],
             class_number=data.get('class_number'),
             role=data['role'],
             subject_ids=data.get('selected_subjects')
         )
+
         subjects_name = await self.get_subjects_name(state=state)
 
         result_subjects_name = ''
         for subj in subjects_name:
             result_subjects_name += subj + " "
 
-        if type(target) == CallbackQuery:
-            await target.message.answer(
+        if data['role'] == 'student':
+            await callback.message.answer(
                 f'<b>{result['message']}</b>' +
                 '\n\n📋 <b>Ваш профиль:</b>'
                 f"\n👤 <b>Имя:</b> {data['name']}"
@@ -175,16 +178,18 @@ class StartHandler(BaseHandler):
                 f"\n📖 <b>Предметы:</b> {result_subjects_name}",
                 parse_mode='HTML'
             )
-        elif type(target) == Message:
-            await target.answer(
+
+        elif data['role'] == 'teacher':
+            await callback.message.answer(
                 f'<b>{result['message']}</b>' +
                 '\n\n📋 <b>Ваш профиль:</b>'
                 f"\n👤 <b>Имя:</b> {data['name']}"
-                f"\n🎭 <b>Статус:</b> 👨‍🎓 {data['role']}",
+                f"\n🎭 <b>Статус:</b> 👨‍🎓 {data['role']}"
+                f"\n📖 <b>Предметы:</b> {result_subjects_name}",
                 parse_mode='HTML',
             )
-            await target.answer(
-                f'<b>{data['name']}</b>, выберите действие:\n\n',
+            await callback.message.answer(
+                f'<b>{data['name']}</b> 💬\n\nВыберите действие:\n\n',
                 parse_mode='HTML',
                 reply_markup = await teacher_inline()
             )
