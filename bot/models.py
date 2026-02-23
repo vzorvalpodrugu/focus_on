@@ -16,6 +16,14 @@ class SubjectEnum(str, enum.Enum):
     PHYSICS = 'Физика'
     MATH = 'Математика'
 
+class DaysEnum(str, enum.Enum):
+    MONDAY = 'Понедельник'
+    TUESDAY = 'Вторник'
+    WEDNESDAY = 'Среда'
+    THURSDAY = 'Четверг'
+    FRIDAY = 'Пятница'
+    SATURDAY = 'Суббота'
+    SUNDAY = 'Воскресенье'
 
 class User(Base):
     __tablename__ = 'users'
@@ -70,6 +78,17 @@ class UserSubject(Base):
     user = relationship('User', backref='subjects')
     subject = relationship('Subject', backref='users')
 
+class Schedule(Base):
+    __tablename__ = 'schedules'
+
+    id = Column(Integer, primary_key=True)
+    teacher_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    subject_id = Column(Integer, ForeignKey('subjects.id'), nullable=False, index=True)
+    day = Column(Enum(DaysEnum), nullable=False)
+    time = Column(String, nullable=False)
+    duration = Column(Integer, nullable=False)
+    cost = Column(Integer, nullable=False)
 
 class Homework(Base):
     __tablename__ = 'homeworks'
