@@ -1,9 +1,25 @@
+from sqlalchemy.orm import selectinload
+
 from bot.repositories.base_repository import BaseRepository
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, or_
 from bot.models import TeacherStudent, User, Subject
 
 
 class TeacherStudentRepository(BaseRepository):
+
+    async def get_teacher_student_subject_by_user_id(self, user_id):
+        # Получить учитель-ученик-предмет по user_id
+        async with self.session_factory() as session:
+            result = await session.execute(
+                select(TeacherStudent)
+                .options(
+                    selectinload(TeacherStudent.student),
+                    selectinload(TeacherStudent.subject)
+                )
+                .where(TeacherStudent.teacher_id == user_id)
+            )
+
+            return list(result.scalars().all())
 
     async def get_students_by_teacher(self, teacher_id):
         async with self.session_factory() as session:

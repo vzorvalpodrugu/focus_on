@@ -2,10 +2,14 @@ from punq import Container, Scope
 
 from bot.database import async_session_maker
 from bot.handlers.main_teacher_handler import MainTeacherHandler
+from bot.handlers.teacher_schedules_handler import TeacherSchedulesHandler
+from bot.models import Schedule
+from bot.repositories.schedule_repo import ScheduleRepository
 from bot.repositories.teacher_student_repo import TeacherStudentRepository
 from bot.repositories.user_repository import UserRepository
 from bot.repositories.subject_repository import SubjectRepository
 from bot.repositories.user_subject_repo import UserSubjectRepository
+from bot.services.schedule_service import ScheduleService
 from bot.services.user_service import UserService
 from bot.handlers.start_handler import StartHandler
 
@@ -45,6 +49,12 @@ def get_container() -> Container:
         scope=Scope.singleton
     )
 
+    container.register(
+        ScheduleRepository,
+        instance=ScheduleRepository(session_factory=container.resolve('session_factory')),
+        scope=Scope.singleton
+    )
+
     # Register Services
     container.register(
         UserService,
@@ -52,6 +62,14 @@ def get_container() -> Container:
             user_repo=container.resolve(UserRepository),
             user_subject_repo=container.resolve(UserSubjectRepository),
             teacher_student_repo=container.resolve(TeacherStudentRepository)
+        ),
+        scope=Scope.singleton
+    )
+
+    container.register(
+        ScheduleService,
+        instance=ScheduleService(
+            schedule_repo=container.resolve(ScheduleRepository)
         ),
         scope=Scope.singleton
     )
@@ -67,6 +85,14 @@ def get_container() -> Container:
         MainTeacherHandler,
         instance=MainTeacherHandler(user_service=container.resolve(UserService)),
         scope=Scope.singleton
+    )
+
+    container.register(
+        TeacherSchedulesHandler,
+        instance=TeacherSchedulesHandler(
+            schedule_service=container.resolve(ScheduleService),
+            user_service=container.resolve(UserService)
+        )
     )
 
     return container

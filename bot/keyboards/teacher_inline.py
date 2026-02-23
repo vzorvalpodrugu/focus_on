@@ -1,14 +1,14 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from bot.repositories.subject_repository import SubjectRepository
-from bot.database import async_session_maker
-from bot.services.user_service import UserService
+
 
 
 async def teacher_inline():
     builder = InlineKeyboardBuilder()
 
     builder.button(text='Мои ученики', callback_data='show_students')
+    builder.button(text='Расписание', callback_data='show_schedules')
+
+    builder.adjust(1, 1)
 
     return builder.as_markup()
 

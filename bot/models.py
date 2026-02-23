@@ -16,6 +16,7 @@ class SubjectEnum(str, enum.Enum):
     PHYSICS = 'Физика'
     MATH = 'Математика'
 
+
 class DaysEnum(str, enum.Enum):
     MONDAY = 'Понедельник'
     TUESDAY = 'Вторник'
@@ -24,6 +25,7 @@ class DaysEnum(str, enum.Enum):
     FRIDAY = 'Пятница'
     SATURDAY = 'Суббота'
     SUNDAY = 'Воскресенье'
+
 
 class User(Base):
     __tablename__ = 'users'
@@ -47,6 +49,7 @@ class User(Base):
         back_populates='teacher'
     )
 
+
 class TeacherStudent(Base):
     __tablename__ = 'teacher_student'
 
@@ -55,9 +58,12 @@ class TeacherStudent(Base):
     teacher_id = Column(Integer, ForeignKey('users.id'))
     subject_id = Column(Integer, ForeignKey('subjects.id'))
 
+    student = relationship("User", foreign_keys=[student_id])
+    subject = relationship("Subject", foreign_keys=[subject_id])
     __table_args__ = (
         UniqueConstraint('student_id', 'teacher_id', 'subject_id', name='unique_teacher_student_subject'),
     )
+
 
 class Subject(Base):
     __tablename__ = 'subjects'
@@ -78,6 +84,7 @@ class UserSubject(Base):
     user = relationship('User', backref='subjects')
     subject = relationship('Subject', backref='users')
 
+
 class Schedule(Base):
     __tablename__ = 'schedules'
 
@@ -89,6 +96,7 @@ class Schedule(Base):
     time = Column(String, nullable=False)
     duration = Column(Integer, nullable=False)
     cost = Column(Integer, nullable=False)
+
 
 class Homework(Base):
     __tablename__ = 'homeworks'
