@@ -1,6 +1,7 @@
 from bot.repositories.base_repository import BaseRepository
-from sqlalchemy import select
-from bot.models import TeacherStudent, User
+from sqlalchemy import select, and_
+from bot.models import TeacherStudent, User, Subject
+
 
 class TeacherStudentRepository(BaseRepository):
 
@@ -23,6 +24,24 @@ class TeacherStudentRepository(BaseRepository):
             )
 
             return list(result.scalars().all())
+
+
+    async def get_user_subjects_by_teacher_id(self, student_id: int, teacher_id: int) -> list:
+        # Получить предметы, по которым обучается студент у конкретного преподавателя
+        async with self.session_factory() as session:
+            data = await session.execute(
+                select(Subject)
+                .join(TeacherStudent, Subject.id == TeacherStudent.subject_id)
+                .where(
+                    and_(
+                        TeacherStudent.student_id == student_id,
+                        TeacherStudent.teacher_id == teacher_id,
+                    )
+                )
+            )
+
+            return list(data.scalars().all())
+
 
     async def set_new_link(self, teacher_id : int, student_id : int, subject_id : int):
         async with self.session_factory() as session:

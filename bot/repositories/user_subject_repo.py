@@ -6,6 +6,7 @@ from typing import List
 class UserSubjectRepository(BaseRepository):
 
     async def add_subject_to_student(self, student_id, subject_id):
+        # Добавить предмет студенту
         async with self.session_factory() as session:
             exists = await session.execute(
                 select(UserSubject).where(
@@ -26,11 +27,13 @@ class UserSubjectRepository(BaseRepository):
                 await session.commit()
 
     async def add_subjects_to_student(self, student_id : int, subject_ids : list[int]):
+        # Добавить предметы студенту
         async with self.session_factory() as session:
             for subj_id in subject_ids:
                 await self.add_subject_to_student(student_id, subj_id)
 
     async def get_user_subjects(self, user_id : int) -> list:
+        # Получить предметы, по которым обучается студент
         async with self.session_factory() as session:
             data = await session.execute(
                 select(Subject)
@@ -40,7 +43,9 @@ class UserSubjectRepository(BaseRepository):
 
             return list(data.scalars().all())
 
+
     async def get_users_by_subject_id(self, subject_id : int):
+        # Получить студентов, которые обучаются данному по предмету
         async with self.session_factory() as session:
             result = await session.execute(
                 select(User)

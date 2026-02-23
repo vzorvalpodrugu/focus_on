@@ -30,18 +30,26 @@ class MainTeacherHandler(BaseHandler):
         async def get_students(callback: CallbackQuery, state : FSMContext):
             teacher_tg_id = callback.from_user.id
             teacher = await self.user_service.repo.get_by_tg_id(teacher_tg_id)
+            await state.update_data(teacher_id=teacher.id)
 
-            students = await self.user_service.teacher_student_repo.get_students_by_teacher(teacher.id)
+            students_all = await self.user_service.teacher_student_repo.get_students_by_teacher(teacher.id)
+            students_all_id = [student.id for student in students_all]
+
+            students = []
+            for student in students_all:
+                if student not in students:
+                    students.append(student)
 
             text = ''
             if not students:
                 text = '<b>К сожалению, у вас ещё нет учеников 👨‍🎓.</b>\n\nМожет вы забыли их добавить?'
 
+
             if students:
                 students_text = '\n\n'
                 for student in students:
                     subject_str = ''
-                    subjects = await self.user_service.user_subject_repo.get_user_subjects(student.id)
+                    subjects = await self.user_service.teacher_student_repo.get_user_subjects_by_teacher_id(student.id, teacher.id)
                     for subject in subjects:
                         subject_str += f'{subject.name.value}, '
 
@@ -62,7 +70,7 @@ class MainTeacherHandler(BaseHandler):
 
             teacher = await self.user_service.repo.get_by_tg_id(teacher_tg_id)
             print(teacher)
-            await state.update_data(teacher_id=teacher.id)
+
 
             subjects = await self.user_service.user_subject_repo.get_user_subjects(teacher.id)
             print(subjects)
