@@ -1,7 +1,8 @@
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
 from aiogram import F
 from bot.handlers.base_handler import BaseHandler
+from bot.keyboards.teacher_inline import teacher_inline
 from bot.keyboards.teacher_schedules_inline import schedule_keyboard, choosing_students_keyboard, choosing_day_keyboard
 from bot.states.register_schedule import RegisterSchedule
 
@@ -58,7 +59,7 @@ class TeacherSchedulesHandler(BaseHandler):
 
             await state.set_state(RegisterSchedule.choosing_day)
 
-            await state.update_data(student_id=student_id, subject_id=subject_id)
+            await state.update_data(student_id=int(student_id), subject_id=int(subject_id))
 
             await callback.message.edit_text(
                 '<b>Выберите день занятия:</b>',
@@ -66,8 +67,91 @@ class TeacherSchedulesHandler(BaseHandler):
                 reply_markup=await choosing_day_keyboard()
             )
 
+        @self.router.callback_query(RegisterSchedule.choosing_day, F.data.startswith('day_'))
+        async def process_day(callback : CallbackQuery, state : FSMContext):
+            day = callback.data.replace('day_', '')
+
+            await state.update_data(day=day)
+
+            await state.set_state(RegisterSchedule.choosing_time)
+
+            await callback.message.edit_text(
+                "<b>Напишите время занятия: </b>\n\n"
+                "<b>В формате:</b> 14:30",
+                parse_mode='HTML'
+            )
+
+        @self.router.message(RegisterSchedule.choosing_time)
+        async def process_time(message: Message, state : FSMContext):
+            time = message.text
+
+            await state.set_state(RegisterSchedule.choosing_duration)
+
+            await state.update_data(time=time)
+
+            await message.answer(
+                "<b>Напишите длительность занятия в минутах: </b>\n\n"
+                "<b>Например:</b> 90",
+                parse_mode='HTML',
+            )
+
+        @self.router.message(RegisterSchedule.choosing_duration)
+        async def process_duration(message: Message, state: FSMContext):
+            duration = int(message.text)
+
+            await state.set_state(RegisterSchedule.choosing_cost)
+
+            await state.update_data(duration=duration)
+
+            await message.answer(
+                "<b>Напишите стоимость занятия в рублях: </b>\n\n"
+                "<b>Например:</b> 1500",
+                parse_mode='HTML',
+            )
 
 
+        @self.router.message(RegisterSchedule.choosing_cost)
+        async def process_cost(message: Message, state: FSMContext):
+            cost = int(message.text)
 
+            await state.update_data(cost=cost)
+
+            await self._finish_schedule_registration(message, state)
+
+    async def _finish_schedule_registration(self, message: Message, state: FSMContext):
+        data = await state.get_data()
+
+        result = await self.schedule_service.create_schedule(
+            teacher_id = data.get('teacher').id,
+            student_id = data['student_id'],
+            subject_id = data['subject_id'],
+            day = data['day'],
+            time = data['time'],
+            duration = data['duration'],
+            cost = data['cost'],
+        )
+
+        student = await self.user_service.repo.get_user_by_id(data['student_id'])
+        subject = await self.schedule_service.subject_repo.get_subject_by_id(data['subject_id'])
+
+        if result['success']:
+            text = (
+                f'<b>{result['message']}</b>\n\n'
+                f'<b>Учитель 👨‍🏫:</b> {data.get('teacher').name}\n'
+                f'<b>Ученик 👨‍🎓:</b> {student.name}\n'
+                f'<b>Предмет 📚:</b> {subject.name.value}\n'
+                f'<b>День недели 📅:</b> {data['day']}\n'
+                f'<b>Время ⏰:</b> {data['time']}\n'
+                f'<b>Длительность ⏱️:</b> {data['duration']}\n'
+                f'<b>Стоимость занятия 💰:</b> {data['cost']}\n'
+            )
+        else:
+            text = f'<b>К сожалению, что-то пошло не так :(</b>'
+
+        await message.answer(
+            text,
+            parse_mode='HTML',
+            reply_markup=await teacher_inline()
+        )
 
 

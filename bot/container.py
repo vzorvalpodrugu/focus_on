@@ -69,7 +69,8 @@ def get_container() -> Container:
     container.register(
         ScheduleService,
         instance=ScheduleService(
-            schedule_repo=container.resolve(ScheduleRepository)
+            schedule_repo=container.resolve(ScheduleRepository),
+            subject_repo=container.resolve(SubjectRepository)
         ),
         scope=Scope.singleton
     )

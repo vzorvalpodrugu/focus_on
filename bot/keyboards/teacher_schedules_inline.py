@@ -37,7 +37,12 @@ async def choosing_students_keyboard(teacher_id : int):
 async def choosing_day_keyboard():
     builder = InlineKeyboardBuilder()
 
-
-    builder.button('flsfls', callback_data='fdf')
+    for day in DaysEnum:
+        builder.button(
+            text=day.value,  # "Понедельник"
+            callback_data=f"day_{day.name}"  # "day_MONDAY"
+        )
+    builder.adjust(1)
 
     return builder.as_markup()
+

@@ -12,6 +12,14 @@ class UserRepository(BaseRepository):
 
             return result.scalar_one_or_none()
 
+    async def get_user_by_id(self, user_id):
+        async with self.session_factory() as session:
+            result = await session.execute(
+                select(User)
+                .where(User.id == user_id)
+            )
+
+            return result.scalar_one_or_none()
 
     async def get_teachers(self):
         async with self.session_factory() as session:

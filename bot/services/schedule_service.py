@@ -4,8 +4,9 @@ from bot.services.base_service import BaseService
 
 
 class ScheduleService(BaseService):
-    def __init__(self, schedule_repo):
+    def __init__(self, schedule_repo, subject_repo):
         super().__init__(schedule_repo)
+        self.subject_repo = subject_repo
 
     async def get_schedule_by_user_id(self, user_id):
         return await self.repo.get_schedule_by_user_id(user_id)
