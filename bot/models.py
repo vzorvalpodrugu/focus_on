@@ -97,6 +97,9 @@ class Schedule(Base):
     duration = Column(Integer, nullable=False)
     cost = Column(Integer, nullable=False)
 
+    teacher = relationship('User', foreign_keys=[teacher_id])
+    student = relationship('User', foreign_keys=[student_id])
+    subject = relationship('Subject', foreign_keys=[subject_id])
 
 class Homework(Base):
     __tablename__ = 'homeworks'

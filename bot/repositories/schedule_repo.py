@@ -1,3 +1,5 @@
+from sqlalchemy.orm import selectinload
+
 from bot.models import Schedule, User, Subject, DaysEnum
 from bot.repositories.base_repository import BaseRepository
 from sqlalchemy import or_, and_, select
@@ -34,6 +36,11 @@ class ScheduleRepository(BaseRepository):
         async with self.session_factory() as session:
             result = await session.execute(
                 select(Schedule)
+                .options(
+                    selectinload(Schedule.teacher),
+                    selectinload(Schedule.student),
+                    selectinload(Schedule.subject),
+                )
                 .where(
                     or_(
                         Schedule.teacher_id == user_id,

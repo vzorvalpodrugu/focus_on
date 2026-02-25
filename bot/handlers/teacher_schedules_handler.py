@@ -24,12 +24,34 @@ class TeacherSchedulesHandler(BaseHandler):
 
             await state.update_data(teacher=teacher)
 
-            schedule = await self.schedule_service.repo.get_schedule_by_user_id(teacher.id)
+            schedules = await self.schedule_service.repo.get_schedule_by_user_id(teacher.id)
+
+            day_order = {
+                "MONDAY" : 1,
+                "TUESDAY": 2,
+                "WEDNESDAY": 3,
+                "THURSDAY": 4,
+                "FRIDAY": 5,
+                "SATURDAY": 6,
+                "SUNDAY": 7
+            }
+
+            schedules.sort(key = lambda x: (day_order[x.day.name], x.time))
 
             text = ''
-            if schedule:
-                text = '<b>Ваше расписание:</b>'
-                print(schedule)
+            if schedules:
+                text = (
+                    f'<b>Ваше расписание:</b>\n\n'
+                )
+                for schedule in schedules:
+                    text += (f'<b>Учитель 👨‍🏫:</b> {schedule.teacher.name}\n'
+                    f'<b>Ученик 👨‍🎓:</b> {schedule.student.name}\n'
+                    f'<b>Предмет 📚:</b> {schedule.subject.name.value}\n'
+                    f'<b>День недели 📅:</b> {schedule.day.value}\n'
+                    f'<b>Время ⏰:</b> {schedule.time}\n'
+                    f'<b>Длительность ⏱️:</b> {schedule.duration}\n'
+                    f'<b>Стоимость занятия 💰:</b> {schedule.cost}\n\n\n')
+
             else:
                 text = '<b>Пока у вас нет занятий.</b>\n\nМожет Вы забыли добавить расписание учеников?'
 
