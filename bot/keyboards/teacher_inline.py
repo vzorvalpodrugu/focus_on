@@ -12,6 +12,13 @@ async def teacher_inline():
 
     return builder.as_markup()
 
+async def back_to_teacher_menu_keyboard():
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='◀️ Вернуться', callback_data='back_to_teacher_menu')
+
+    return builder.as_markup()
+
 
 async def add_students():
     builder = InlineKeyboardBuilder()

@@ -2,6 +2,7 @@ from punq import Container, Scope
 
 from bot.database import async_session_maker
 from bot.handlers.main_teacher_handler import MainTeacherHandler
+from bot.handlers.student_handler import StudentHandler
 from bot.handlers.teacher_schedules_handler import TeacherSchedulesHandler
 from bot.models import Schedule
 from bot.repositories.schedule_repo import ScheduleRepository
@@ -61,7 +62,8 @@ def get_container() -> Container:
         instance=UserService(
             user_repo=container.resolve(UserRepository),
             user_subject_repo=container.resolve(UserSubjectRepository),
-            teacher_student_repo=container.resolve(TeacherStudentRepository)
+            teacher_student_repo=container.resolve(TeacherStudentRepository),
+            subject_repo=container.resolve(SubjectRepository)
         ),
         scope=Scope.singleton
     )
@@ -93,7 +95,17 @@ def get_container() -> Container:
         instance=TeacherSchedulesHandler(
             schedule_service=container.resolve(ScheduleService),
             user_service=container.resolve(UserService)
-        )
+        ),
+        scope=Scope.singleton
+    )
+
+    container.register(
+        StudentHandler,
+        instance=StudentHandler(
+            user_service=container.resolve(UserService),
+            schedule_service = container.resolve(ScheduleService)
+        ),
+        scope = Scope.singleton
     )
 
     return container

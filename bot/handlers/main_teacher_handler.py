@@ -2,7 +2,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from aiogram import F
 from bot.handlers.base_handler import BaseHandler
-from bot.keyboards.teacher_inline import add_students, subjects_keyboard
+from bot.keyboards.teacher_inline import add_students, subjects_keyboard, back_to_teacher_menu_keyboard
 from bot.keyboards.teacher_inline import teacher_inline, student_by_subject_keyboard
 from bot.states.add_students_to_teacher import AddStudentsToTeacher
 
@@ -12,10 +12,11 @@ class MainTeacherHandler(BaseHandler):
         super().__init__()
 
     def _register_handlers(self):
-        @self.router.callback_query(F.data == 'back_to_teacher_menu')
 
+
+        @self.router.callback_query(F.data == 'back_to_teacher_menu')
         # Кнопка назад
-        async def back_to_teacher_menu(callback: CallbackQuery):
+        async def process_back(callback: CallbackQuery):
             teacher_tg_id = callback.from_user.id
             teacher = await self.user_service.repo.get_by_tg_id(teacher_tg_id)
 
@@ -24,6 +25,7 @@ class MainTeacherHandler(BaseHandler):
                 parse_mode='HTML',
                 reply_markup=await teacher_inline()
             )
+
 
         # 1. Показать всех учеников, которые есть у учителя
         @self.router.callback_query(F.data == 'show_students')
@@ -92,6 +94,9 @@ class MainTeacherHandler(BaseHandler):
                 data = await state.get_data()
                 teacher_id = data.get('teacher_id')
 
+                subject = await self.user_service.subject_repo.get_subject_by_id(subject_id)
+                await state.update_data(subject=subject)
+
                 students_all = await self.user_service.user_subject_repo.get_users_by_subject_id(subject_id)
                 students_with_teacher = await self.user_service.teacher_student_repo.get_students_with_teacher_by_subject_id(subject_id)
                 students_id_with_teacher = [student.id for student in students_with_teacher]
@@ -110,6 +115,8 @@ class MainTeacherHandler(BaseHandler):
             async def process_student(callback : CallbackQuery, state : FSMContext):
                 student_id = int(callback.data.replace('student_', ''))
 
+                student = await self.user_service.repo.get_user_by_id(student_id)
+
                 teacher_tg_id = callback.from_user.id
 
                 teacher = await self.user_service.repo.get_by_tg_id(teacher_tg_id)
@@ -123,6 +130,12 @@ class MainTeacherHandler(BaseHandler):
                     teacher_id = teacher_id,
                     student_id=student_id,
                     subject_id=subject_id
+                )
+
+                await callback.message.edit_text(
+                    f"<b>✅ Вы успешно добавили ученика {student.name} на предмет {data['subject'].name.value}!</b>",
+                    parse_mode='HTML',
+                    reply_markup=await back_to_teacher_menu_keyboard()
                 )
 
                 await state.clear()

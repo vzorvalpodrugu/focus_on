@@ -179,6 +179,12 @@ class StartHandler(BaseHandler):
                 parse_mode='HTML'
             )
 
+            await callback.message.answer(
+                f'<b>{data['name']}</b> 💬\n\nВыберите действие:\n\n',
+                parse_mode='HTML',
+                reply_markup=await student_inline()
+            )
+
         elif data['role'] == 'teacher':
             await callback.message.answer(
                 f'<b>{result['message']}</b>' +

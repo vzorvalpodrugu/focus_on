@@ -167,6 +167,8 @@ class TeacherSchedulesHandler(BaseHandler):
                 f'<b>Длительность ⏱️:</b> {data['duration']}\n'
                 f'<b>Стоимость занятия 💰:</b> {data['cost']}\n'
             )
+
+            await self.schedule_service.notify_student_add_schedule(student_tg_id = student.tg_id, teacher_name=data.get('teacher').name)
         else:
             text = f'<b>К сожалению, что-то пошло не так :(</b>'
 

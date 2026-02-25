@@ -1,6 +1,9 @@
-from bot.models import Schedule, DaysEnum
-from bot.services.base_service import BaseService
+from aiogram import Bot
 
+from bot.keyboards.student_inline import back_to_student_menu
+from bot.models import DaysEnum
+from bot.services.base_service import BaseService
+from bot.config import TG_TOKEN
 
 
 class ScheduleService(BaseService):
@@ -32,8 +35,22 @@ class ScheduleService(BaseService):
             cost
         )
 
+
         return {
             "success": True,
             "message": "✅ Расписание успешно добавлено",
             "user": schedule
         }
+
+    async def notify_student_add_schedule(self, student_tg_id: int, teacher_name: str):
+        bot = Bot(token=TG_TOKEN)
+
+        await bot.send_message(
+            chat_id=student_tg_id,
+            text=f"<b>👨‍🏫 Учитель {teacher_name} добавил новое занятие в расписание!✅</b>\n\n"
+            "Обязательно проверьте!",
+            parse_mode='HTML',
+            reply_markup=await back_to_student_menu()
+        )
+
+
