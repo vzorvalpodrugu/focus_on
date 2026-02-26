@@ -1,15 +1,18 @@
 from punq import Container, Scope
 
 from bot.database import async_session_maker
+from bot.handlers.LessonHandler import LessonHandler
 from bot.handlers.main_teacher_handler import MainTeacherHandler
 from bot.handlers.student_handler import StudentHandler
 from bot.handlers.teacher_schedules_handler import TeacherSchedulesHandler
 from bot.models import Schedule
+from bot.repositories.lesson_repository import LessonRepository
 from bot.repositories.schedule_repo import ScheduleRepository
 from bot.repositories.teacher_student_repo import TeacherStudentRepository
 from bot.repositories.user_repository import UserRepository
 from bot.repositories.subject_repository import SubjectRepository
 from bot.repositories.user_subject_repo import UserSubjectRepository
+from bot.services.lesson_service import LessonService
 from bot.services.schedule_service import ScheduleService
 from bot.services.user_service import UserService
 from bot.handlers.start_handler import StartHandler
@@ -56,6 +59,12 @@ def get_container() -> Container:
         scope=Scope.singleton
     )
 
+    container.register(
+        LessonRepository,
+        instance=LessonRepository(session_factory=container.resolve('session_factory')),
+        scope=Scope.singleton
+    )
+
     # Register Services
     container.register(
         UserService,
@@ -73,6 +82,14 @@ def get_container() -> Container:
         instance=ScheduleService(
             schedule_repo=container.resolve(ScheduleRepository),
             subject_repo=container.resolve(SubjectRepository)
+        ),
+        scope=Scope.singleton
+    )
+
+    container.register(
+        LessonService,
+        instance=LessonService(
+            lesson_repo=container.resolve(LessonRepository)
         ),
         scope=Scope.singleton
     )
@@ -106,6 +123,15 @@ def get_container() -> Container:
             schedule_service = container.resolve(ScheduleService)
         ),
         scope = Scope.singleton
+    )
+
+    container.register(
+        LessonHandler,
+        instance=LessonHandler(
+            lesson_service=container.resolve(LessonService),
+            user_service=container.resolve(UserService)
+        ),
+        scope=Scope.singleton
     )
 
     return container

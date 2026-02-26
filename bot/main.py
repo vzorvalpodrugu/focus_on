@@ -5,9 +5,11 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
+from bot.handlers.LessonHandler import LessonHandler
 from bot.handlers.main_teacher_handler import MainTeacherHandler
 from bot.handlers.student_handler import StudentHandler
 from bot.handlers.teacher_schedules_handler import TeacherSchedulesHandler
+from bot.services.lesson_service import LessonService
 from bot.services.schedule_service import ScheduleService
 from bot.services.user_service import UserService
 from bot.container import get_container
@@ -31,17 +33,20 @@ async def main():
     teacher_handler = container.resolve(MainTeacherHandler)
     teacher_schedules_handler = container.resolve(TeacherSchedulesHandler)
     student_handler = container.resolve(StudentHandler)
+    lesson_handler = container.resolve(LessonHandler)
 
     dp.include_router(start_handler.router)
     dp.include_router(teacher_handler.router)
     dp.include_router(teacher_schedules_handler.router)
     dp.include_router(student_handler.router)
+    dp.include_router(lesson_handler.router)
 
     async with bot:
         await dp.start_polling(
             bot,
             user_service=container.resolve(UserService),
-            schedule_service=container.resolve(ScheduleService)
+            schedule_service=container.resolve(ScheduleService),
+            lesson_service=container.resolve(LessonService)
         )
 
     logger.info('Bot have been run')

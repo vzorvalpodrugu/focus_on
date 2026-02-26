@@ -21,6 +21,17 @@ class TeacherStudentRepository(BaseRepository):
 
             return list(result.scalars().all())
 
+    async def get_unique_students_by_teacher(self, user_id: int) -> list[User]:
+        """Получить уникальных учеников преподавателя"""
+        async with self.session_factory() as session:
+            result = await session.execute(
+                select(User)
+                .distinct()
+                .join(TeacherStudent, User.id == TeacherStudent.student_id)
+                .where(TeacherStudent.teacher_id == user_id)
+            )
+            return list(result.scalars().all())
+
     async def get_students_by_teacher(self, teacher_id):
         async with self.session_factory() as session:
             result = await session.execute(
