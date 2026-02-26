@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, BigInteger, UniqueConstraint
+from pydantic.color import Color
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, BigInteger, UniqueConstraint, Boolean
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, relationship
 import enum
@@ -125,7 +126,11 @@ class Lesson(Base):
     subject_id = Column(Integer, ForeignKey('subjects.id'))
     teacher_id = Column(Integer, ForeignKey('users.id'))
     topics = Column(String(100), nullable=False)
-    homework_id = Column(Integer, ForeignKey('homeworks.id'))
+    homework_id = Column(Integer, ForeignKey('homeworks.id'), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.now())
+
+    lesson_screenshots = relationship('LessonScreenshots', order_by='LessonScreenshots.order', back_populates='lesson')
 
     student = relationship(
         'User',
@@ -142,4 +147,12 @@ class Lesson(Base):
     homework = relationship('Homework', back_populates='lesson')
     subject = relationship('Subject', back_populates='lessons')
 
-    pdf_file_id = Column(String(200), nullable=False)
+class LessonScreenshots(Base):
+    __tablename__ = 'lesson_screenshots'
+
+    id = Column(Integer, primary_key=True)
+    lesson_id = Column(Integer, ForeignKey('lessons.id'))
+    file_id = Column(String(100), nullable=False)
+    order = Column(Integer, default=0)
+
+    lesson = relationship('Lesson', back_populates='lesson_screenshots')
