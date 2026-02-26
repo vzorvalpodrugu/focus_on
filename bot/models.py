@@ -110,12 +110,25 @@ class Homework(Base):
     subject_id = Column(Integer, ForeignKey('subjects.id'), nullable=False)
     teacher_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     topics = Column(String(100), nullable=False)
-    pdf_file_id = Column(String(200), nullable=False)
+
 
     subject = relationship('Subject')
     lesson = relationship('Lesson', back_populates='homework')
     student = relationship('User', foreign_keys=[student_id])
     teacher = relationship('User', foreign_keys=[teacher_id])
+
+    homework_screenshots = relationship('HomeworkScreenshots', order_by='HomeworkScreenshots.order', back_populates='homework')
+
+
+class HomeworkScreenshots(Base):
+    __tablename__ = 'homework_screenshots'
+
+    id = Column(Integer, primary_key=True)
+    homework_id = Column(Integer, ForeignKey('homeworks.id'))
+    file_id = Column(String(100), nullable=False)
+    order = Column(Integer, default=0)
+
+    homework = relationship('Homework', back_populates='homework_screenshots')
 
 
 class Lesson(Base):
