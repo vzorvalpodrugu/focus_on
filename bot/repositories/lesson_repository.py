@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from sqlalchemy.orm import selectinload
 
 from bot.models import Lesson, LessonScreenshots
@@ -85,6 +87,34 @@ class LessonRepository(BaseRepository):
             )
 
             return list(result.scalars().all())
+
+
+    async def get_lessons_by_period(
+            self,
+            user_id: int,
+            role: str,
+            period_type: str #2weeks, month, all
+    ) -> list[Lesson]:
+        async with self.session_factory() as session:
+            query = select(Lesson).options(
+                selectinload(Lesson.teacher),
+                selectinload(Lesson.student),
+                selectinload(Lesson.subject)
+            )
+
+            if role == 'teacher':
+                query = query.where(Lesson.teacher_id == user_id)
+            elif role == 'student':
+                query = query.where(Lesson.student_id == user_id)
+
+            if period_type == '2weeks':
+                now = datetime.now()
+                two_weeks_ago = now - timedelta(days=14)
+
+                query = query.where(Lesson.created_at >= two_weeks_ago)
+
+            return  list(query.scalars().all())
+
 
 
 

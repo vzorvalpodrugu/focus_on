@@ -1,7 +1,8 @@
 from punq import Container, Scope
 
 from bot.database import async_session_maker
-from bot.handlers.LessonHandler import LessonHandler
+from bot.handlers.lesson_create_handler import LessonCreateHandler
+from bot.handlers.lesson_view_handler import LessonViewHandler
 from bot.handlers.main_teacher_handler import MainTeacherHandler
 from bot.handlers.student_handler import StudentHandler
 from bot.handlers.teacher_schedules_handler import TeacherSchedulesHandler
@@ -144,14 +145,25 @@ def get_container() -> Container:
     )
 
     container.register(
-        LessonHandler,
-        instance=LessonHandler(
+        LessonCreateHandler,
+        instance=LessonCreateHandler(
             lesson_service=container.resolve(LessonService),
             user_service=container.resolve(UserService),
             homework_service=container.resolve(HomeworkService)
         ),
         scope=Scope.singleton
     )
+
+    container.register(
+        LessonViewHandler,
+        instance=LessonViewHandler(
+            lesson_service=container.resolve(LessonService),
+            user_service=container.resolve(UserService),
+            homework_service=container.resolve(HomeworkService)
+        ),
+        scope=Scope.singleton
+    )
+
 
     # Register middlewares
     container.register(

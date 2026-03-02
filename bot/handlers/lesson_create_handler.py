@@ -10,7 +10,7 @@ from bot.states.register_homework import RegisterHomework
 from bot.states.register_lesson import RegisterLesson
 
 
-class LessonHandler(BaseHandler):
+class LessonCreateHandler(BaseHandler):
     def __init__(self, lesson_service, user_service, homework_service):
         super().__init__()
         self.lesson_service = lesson_service
