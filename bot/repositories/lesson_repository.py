@@ -95,6 +95,7 @@ class LessonRepository(BaseRepository):
             role: str,
             period_type: str #2weeks, month, all
     ) -> list[Lesson]:
+        # Получить занятия по роли и периоду
         async with self.session_factory() as session:
             query = select(Lesson).options(
                 selectinload(Lesson.teacher),
