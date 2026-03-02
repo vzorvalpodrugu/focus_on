@@ -5,13 +5,16 @@ from bot.handlers.LessonHandler import LessonHandler
 from bot.handlers.main_teacher_handler import MainTeacherHandler
 from bot.handlers.student_handler import StudentHandler
 from bot.handlers.teacher_schedules_handler import TeacherSchedulesHandler
+from bot.middlewares.album_middleware import AlbumMiddleware
 from bot.models import Schedule
+from bot.repositories.homework_repository import HomeworkRepository
 from bot.repositories.lesson_repository import LessonRepository
 from bot.repositories.schedule_repo import ScheduleRepository
 from bot.repositories.teacher_student_repo import TeacherStudentRepository
 from bot.repositories.user_repository import UserRepository
 from bot.repositories.subject_repository import SubjectRepository
 from bot.repositories.user_subject_repo import UserSubjectRepository
+from bot.services.homework_service import HomeworkService
 from bot.services.lesson_service import LessonService
 from bot.services.schedule_service import ScheduleService
 from bot.services.user_service import UserService
@@ -65,6 +68,13 @@ def get_container() -> Container:
         scope=Scope.singleton
     )
 
+    container.register(
+        HomeworkRepository,
+        instance=HomeworkRepository(session_factory=container.resolve('session_factory')),
+        scope=Scope.singleton
+    )
+
+
     # Register Services
     container.register(
         UserService,
@@ -90,6 +100,14 @@ def get_container() -> Container:
         LessonService,
         instance=LessonService(
             lesson_repo=container.resolve(LessonRepository)
+        ),
+        scope=Scope.singleton
+    )
+
+    container.register(
+        HomeworkService,
+        instance=HomeworkService(
+            homework_repo=container.resolve(HomeworkRepository)
         ),
         scope=Scope.singleton
     )
@@ -129,9 +147,16 @@ def get_container() -> Container:
         LessonHandler,
         instance=LessonHandler(
             lesson_service=container.resolve(LessonService),
-            user_service=container.resolve(UserService)
+            user_service=container.resolve(UserService),
+            homework_service=container.resolve(HomeworkService)
         ),
         scope=Scope.singleton
     )
 
+    # Register middlewares
+    container.register(
+        AlbumMiddleware,
+        instance=AlbumMiddleware(latency=0.2),
+        scope=Scope.singleton
+    )
     return container

@@ -9,6 +9,8 @@ from bot.handlers.LessonHandler import LessonHandler
 from bot.handlers.main_teacher_handler import MainTeacherHandler
 from bot.handlers.student_handler import StudentHandler
 from bot.handlers.teacher_schedules_handler import TeacherSchedulesHandler
+from bot.middlewares.album_middleware import AlbumMiddleware
+from bot.services.homework_service import HomeworkService
 from bot.services.lesson_service import LessonService
 from bot.services.schedule_service import ScheduleService
 from bot.services.user_service import UserService
@@ -34,19 +36,22 @@ async def main():
     teacher_schedules_handler = container.resolve(TeacherSchedulesHandler)
     student_handler = container.resolve(StudentHandler)
     lesson_handler = container.resolve(LessonHandler)
+    album_middleware = container.resolve(AlbumMiddleware)
 
     dp.include_router(start_handler.router)
     dp.include_router(teacher_handler.router)
     dp.include_router(teacher_schedules_handler.router)
     dp.include_router(student_handler.router)
     dp.include_router(lesson_handler.router)
+    dp.message.middleware(album_middleware)
 
     async with bot:
         await dp.start_polling(
             bot,
             user_service=container.resolve(UserService),
             schedule_service=container.resolve(ScheduleService),
-            lesson_service=container.resolve(LessonService)
+            lesson_service=container.resolve(LessonService),
+            homework_service=container.resolve(HomeworkService)
         )
 
     logger.info('Bot have been run')

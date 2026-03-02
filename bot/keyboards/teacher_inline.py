@@ -5,9 +5,11 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 async def teacher_inline():
     builder = InlineKeyboardBuilder()
 
-    builder.button(text='Мои ученики', callback_data='show_students')
-    builder.button(text='Расписание', callback_data='show_schedules')
+    builder.button(text='Мои ученики 👨‍🎓', callback_data='show_students')
+    builder.button(text='Расписание 📅', callback_data='show_schedules')
     builder.button(text='Новый урок 📄', callback_data='create_lesson')
+    builder.button(text='Прикрепить ДЗ ➕', callback_data='add_homework')
+
 
     builder.adjust(1, 1)
 

@@ -32,10 +32,33 @@ async def choosing_subject_keyboard(teacher_id: int, student_id: int):
 
     return  builder.as_markup()
 
+
 async def screenshots_done_keyboard():
     builder = InlineKeyboardBuilder()
 
-    builder.button(text='Готово', callback_data = 'create_homework')
+    builder.button(text='Готово', callback_data = 'wanna_homework')
+    builder.button(text='◀️ Вернуться', callback_data='back_to_teacher_menu')
+
+    builder.adjust(1)
+
+    return builder.as_markup()
+
+
+async def choose_homework_keyboard():
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text="Добавить ➕", callback_data='create_homework')
+    builder.button(text='Позже 📓', callback_data='finish_lesson')
+
+    builder.adjust(2)
+
+    return builder.as_markup()
+
+
+async def homework_from_lesson_create_done_keyboard():
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='Готово', callback_data='finish_lesson')
     builder.button(text='◀️ Вернуться', callback_data='back_to_teacher_menu')
 
     builder.adjust(1)
@@ -45,7 +68,7 @@ async def screenshots_done_keyboard():
 async def homework_done_keyboard():
     builder = InlineKeyboardBuilder()
 
-    builder.button(text='Готово', callback_data='finish_lesson')
+    builder.button(text='Готово', callback_data='finish_homework')
     builder.button(text='◀️ Вернуться', callback_data='back_to_teacher_menu')
 
     builder.adjust(1)
