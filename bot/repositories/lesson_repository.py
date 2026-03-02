@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import selectinload
 
-from bot.models import Lesson, LessonScreenshots
+from bot.models import Lesson, LessonScreenshots, Homework
 from bot.repositories.base_repository import BaseRepository
 from sqlalchemy import update, select, and_
 
@@ -17,7 +17,9 @@ class LessonRepository(BaseRepository):
                 .options(
                     selectinload(Lesson.teacher),
                     selectinload(Lesson.student),
-                    selectinload(Lesson.subject)
+                    selectinload(Lesson.subject),
+                    selectinload(Lesson.homework).selectinload(Homework.homework_screenshots),
+                    selectinload(Lesson.lesson_screenshots)
                 )
                 .where(Lesson.id == lesson_id)
             )
@@ -114,7 +116,11 @@ class LessonRepository(BaseRepository):
 
                 query = query.where(Lesson.created_at >= two_weeks_ago)
 
-            return  list(query.scalars().all())
+            query = query.order_by(Lesson.created_at.desc())
+
+            result = await session.execute(query)
+
+            return  list(result.scalars().all())
 
 
 
