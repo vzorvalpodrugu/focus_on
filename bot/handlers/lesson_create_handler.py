@@ -470,6 +470,15 @@ class LessonCreateHandler(BaseHandler):
             reply_markup=await back_to_student_menu()
         )
 
+        await self.homework_service.notify_teacher_add_done_homework(
+            teacher_tg_id = lesson.teacher.tg_id,
+            lesson_id = lesson.id,
+            student_name = user.name,
+            subject_name = lesson.subject.name.value
+        )
+
+        await state.clear()
+
     async def _finish_create_homework(self, callback: CallbackQuery, state: FSMContext):
         data = await state.get_data()
 

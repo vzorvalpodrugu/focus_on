@@ -101,16 +101,9 @@ class LessonRepository(BaseRepository):
                     selectinload(Lesson.homework).selectinload(Homework.homework_screenshots)
                 )
                 .where(
-                    and_(
-                        or_(
-                            Lesson.student_id == user_id,
-                            Lesson.teacher_id == user_id
-                        ),
-                        Lesson.homework_id.isnot(None),  # ДЗ прикреплено
-                        ~exists().where(  # НЕТ записи в done_homeworks
-                            DoneHomework.lesson_id == Lesson.id
-                        )
-                    )
+                    or_(Lesson.student_id == user_id, Lesson.teacher_id == user_id),
+                    Lesson.homework_id.isnot(None),
+                    Lesson.done_homework == None
                 )
             )
             return list(result.scalars().all())

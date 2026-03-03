@@ -138,6 +138,8 @@ class DoneHomework(Base):
     lesson_id = Column(Integer, ForeignKey('lessons.id'), nullable=False)
     student_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
+
+    lesson = relationship('Lesson', back_populates='done_homework')
     done_homework_screenshots = relationship('DoneHomeworkScreenshots', order_by='DoneHomeworkScreenshots.order',
                                              back_populates='done_homework')
 
@@ -181,6 +183,8 @@ class Lesson(Base):
 
     done_homework = relationship(
         'DoneHomework',
+        back_populates='lesson',
+        uselist=False
     )
 
     subject = relationship('Subject', back_populates='lessons')
