@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import selectinload
 
-from bot.models import Lesson, LessonScreenshots, Homework
+from bot.models import Lesson, LessonScreenshots, Homework, DoneHomework
 from bot.repositories.base_repository import BaseRepository
-from sqlalchemy import update, select, and_
+from sqlalchemy import update, select, and_, or_, exists
 
 
 class LessonRepository(BaseRepository):
@@ -90,7 +90,7 @@ class LessonRepository(BaseRepository):
 
             return list(result.scalars().all())
 
-    async def get_lessons_without_done_hw(self, teacher_id: int, student_id: int) -> list[Lesson]:
+    async def get_lessons_without_done_hw(self, user_id: int) -> list[Lesson]:
         async with self.session_factory() as session:
             result = await session.execute(
                 select(Lesson)
@@ -102,10 +102,14 @@ class LessonRepository(BaseRepository):
                 )
                 .where(
                     and_(
-                        Lesson.teacher_id == teacher_id,
-                        Lesson.student_id == student_id,
-                        Lesson.homework_id.isnot(None),
-                        Lesson.done_homework_id.is_(None)
+                        or_(
+                            Lesson.student_id == user_id,
+                            Lesson.teacher_id == user_id
+                        ),
+                        Lesson.homework_id.isnot(None),  # ДЗ прикреплено
+                        ~exists().where(  # НЕТ записи в done_homeworks
+                            DoneHomework.lesson_id == Lesson.id
+                        )
                     )
                 )
             )

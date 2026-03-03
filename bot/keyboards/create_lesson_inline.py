@@ -75,5 +75,14 @@ async def homework_done_keyboard():
 
     return builder.as_markup()
 
+async def done_homework_done_keyboard():
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='Готово', callback_data='finish_done_homework')
+    builder.button(text='◀️ Вернуться', callback_data='back_to_student_menu')
+
+    builder.adjust(1)
+
+    return builder.as_markup()
 
 

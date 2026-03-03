@@ -1,11 +1,16 @@
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
-from aiogram import F
+from aiogram.types import CallbackQuery, Message, InputMediaPhoto
+from aiogram import F, Bot
+
+from bot.config import TG_TOKEN
 from bot.handlers.base_handler import BaseHandler
 from bot.keyboards.create_lesson_inline import choosing_student_keyboard, choosing_subject_keyboard, \
     screenshots_done_keyboard, homework_from_lesson_create_done_keyboard, choose_homework_keyboard, \
-    homework_done_keyboard
+    homework_done_keyboard, done_homework_done_keyboard
+from bot.keyboards.lesson_view_inline import back_to_menu_keyboard
+from bot.keyboards.student_inline import back_to_student_menu
 from bot.keyboards.teacher_inline import back_to_teacher_menu_keyboard, teacher_inline
+from bot.states.register_done_homework import RegisterDoneHomework
 from bot.states.register_homework import RegisterHomework
 from bot.states.register_lesson import RegisterLesson
 
@@ -203,7 +208,7 @@ class LessonCreateHandler(BaseHandler):
 
 
         # ----------------------------------------------------------------
-        # Прикрепление ДЗ
+        # Прикрепление ДЗ (учитель прикрепляет ДЗ, которое надо решить)
         # ----------------------------------------------------------------
         @self.router.callback_query(F.data == 'add_homework')
         async def process_add_homework(callback: CallbackQuery, state: FSMContext):
@@ -294,6 +299,176 @@ class LessonCreateHandler(BaseHandler):
         async def process_finish_homework(callback: CallbackQuery, state: FSMContext):
             await self._finish_create_homework(callback, state)
 
+        # ----------------------------------------------------------------
+        # Прикрепление ДЗ (ученик прикрепляет решенное ДЗ)
+        # ----------------------------------------------------------------
+
+        @self.router.callback_query(F.data == 'add_done_homework')
+        async def process_done_homework(callback: CallbackQuery, state: FSMContext):
+            # 1. Отображение всех lesson без выполненного ДЗ
+            user_tg_id = callback.from_user.id
+
+            user = await self.user_service.repo.get_by_tg_id(user_tg_id)
+
+            await state.update_data(user=user)
+
+            lessons = await self.lesson_service.repo.get_lessons_without_done_hw(user_id=user.id)
+
+            if lessons:
+                for lesson in lessons:
+                    await callback.message.answer(
+                        f"<b>id занятия 🔑: </b>{lesson.id}\n\n"
+                        f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
+                        f"<b>Ученик 👨‍🎓: </b>{lesson.student.name} \n"
+                        f"<b>Предмет 📚: </b>{lesson.subject.name.value} \n"
+                        f"<b>Тема 📝: </b>{lesson.topics}\n\n"
+                        f'<b>Дата 📅: </b>{lesson.created_at}',
+                        parse_mode='HTML'
+                    )
+
+                await callback.message.answer(
+                    f"<b>Отправьте id занятия 🔑, к которому хотели бы добавить ДЗ!</b>",
+                    parse_mode='HTML',
+                    reply_markup=await back_to_menu_keyboard(role=user.role)
+                )
+
+                await state.set_state(RegisterDoneHomework.choosing_lesson_id)
+
+            else:
+                await callback.message.edit_text(
+                    f'<b>У вас выполнены все ДЗ. Отдыхайте и радуйтесь жизни :D</b>\n\n',
+                    parse_mode='HTML',
+                    reply_markup=await back_to_menu_keyboard(role=user.role)
+                )
+
+        @self.router.message(RegisterDoneHomework.choosing_lesson_id)
+        async def process_lesson_id(message: Message, state: FSMContext):
+            # 2. Обработка id урока
+            lesson_id = int(message.text)
+
+            if lesson_id < 0:
+                return
+
+            user = (await state.get_data()).get('user')
+
+            bot = Bot(token=TG_TOKEN)
+            lesson = await self.lesson_service.repo.get_lesson_by_id(lesson_id)
+
+            await state.update_data(lesson=lesson)
+
+            lesson_media_group = [
+                InputMediaPhoto(media=screenshot.file_id)
+                for screenshot in lesson.lesson_screenshots
+            ]
+
+            await message.answer(
+                f'<b>Конспект 📝:</b>',
+                parse_mode='HTML'
+            )
+            if lesson_media_group:
+                await bot.send_media_group(
+                    chat_id=message.chat.id,
+                    media=lesson_media_group
+                )
+
+            if lesson.homework:
+
+                homework_media_group = [
+                    InputMediaPhoto(media=screenshot.file_id)
+                    for screenshot in lesson.homework.homework_screenshots
+                ]
+
+                await message.answer(
+                    f'<b>Домашнее задание 📓:</b>',
+                    parse_mode='HTML'
+                )
+
+                if homework_media_group:
+                    await bot.send_media_group(
+                        chat_id=message.chat.id,
+                        media=homework_media_group
+                    )
+
+            await state.update_data(lesson_id=lesson_id)
+
+            await message.answer(
+                f'<b>Пришлите к этому уроку выполненное ДЗ 📝:</b>\n\n'
+                f'<b>Можно по одному фото, можно сразу несколько!</b>',
+                parse_mode='HTML',
+                reply_markup=await back_to_menu_keyboard(role=user.role)
+            )
+
+            await state.set_state(RegisterDoneHomework.choosing_done_homework_screenshots)
+
+
+        @self.router.message(RegisterDoneHomework.choosing_done_homework_screenshots, F.photo)
+        async def process_done_homework_screenshots(message: Message, state: FSMContext, album: list[Message] = None):
+            # 3. Обработка скринов выполненного домашнего задания
+            media_to_process = album if album else [message]
+
+            screenshots_to_add = []
+            for msg in media_to_process:
+                if msg.photo:
+                    file_id = msg.photo[-1].file_id
+                    screenshots_to_add.append({'file_id': file_id})
+
+            if not screenshots_to_add:
+                return await message.answer("❌ Не удалось распознать фото.")
+
+            # Логика сохранения в FSM
+            data = await state.get_data()
+            existing = data.get('done_homework_screenshots', [])
+
+            start_order = len(existing) + 1
+            for i, scr in enumerate(screenshots_to_add, start=start_order):
+                scr['order'] = i
+                existing.append(scr)
+
+            await state.update_data(done_homework_screenshots=existing)
+
+            # Формируем ответ
+            added_count = len(screenshots_to_add)
+            total = len(existing)
+
+            if added_count > 1:
+                text = f"✅ Добавлено {added_count} скриншотов!\nВсего: {total}"
+            else:
+                text = f"✅ Скриншот {total} добавлен!"
+
+            text += "\n\nМожете добавить ещё или нажмите 'Готово'"
+
+            # Отвечаем на последнее сообщение (или единственное)
+            await message.answer(
+                text,
+                reply_markup=await done_homework_done_keyboard()
+            )
+
+        @self.router.callback_query(RegisterDoneHomework.choosing_done_homework_screenshots, F.data == 'finish_done_homework')
+        async def process_finish_done_homework(callback: CallbackQuery, state: FSMContext):
+            await self._finish_done_homework(callback, state)
+
+    async def _finish_done_homework(self, callback: CallbackQuery, state: FSMContext):
+        data = await state.get_data()
+
+        lesson = data.get('lesson')
+        homework = lesson.homework
+
+        user = data.get('user')
+        done_homework_screenshots = data.get('done_homework_screenshots')
+
+        await self.homework_service.repo.create_done_homework(
+            homework_id = homework.id,
+            lesson_id = lesson.id,
+            student_id = user.id,
+            done_homework_screenshots = done_homework_screenshots
+        )
+
+        await callback.message.answer(
+            f'<b>Выполненное домашнее задание успешно добавлено! ✅\n\n</b>'
+            f'<b>Отправлено преподавателю на проверку!</b>',
+            parse_mode='HTML',
+            reply_markup=await back_to_student_menu()
+        )
 
     async def _finish_create_homework(self, callback: CallbackQuery, state: FSMContext):
         data = await state.get_data()
