@@ -130,6 +130,28 @@ class HomeworkScreenshots(Base):
 
     homework = relationship('Homework', back_populates='homework_screenshots')
 
+class DoneHomework(Base):
+    __tablename__ = 'done_homeworks'
+
+    id = Column(Integer, primary_key=True)
+    homework_id = Column(Integer, ForeignKey('homeworks.id'), nullable=False)
+    lesson_id = Column(Integer, ForeignKey('lessons.id'), nullable=False)
+    student_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+
+    done_homework_screenshots = relationship('DoneHomeworkScreenshots', order_by='DoneHomeworkScreenshots.order',
+                                             back_populates='homework')
+    lesson = relationship('Lesson', back_populates='done_homework')
+
+class DoneHomeworkScreenshots(Base):
+    __tablename__ = 'done_homework_screenshots'
+
+    id = Column(Integer, primary_key=True)
+    homework_id = Column(Integer, ForeignKey('homeworks.id'))
+    file_id = Column(String(100), nullable=False)
+    order = Column(Integer, default=0)
+
+    homework = relationship('DoneHomework', back_populates='done_homework_screenshots')
+    lesson = relationship('Lesson', back_populates='done_homework')
 
 class Lesson(Base):
     __tablename__ = 'lessons'
@@ -140,6 +162,7 @@ class Lesson(Base):
     teacher_id = Column(Integer, ForeignKey('users.id'))
     topics = Column(String(100), nullable=False)
     homework_id = Column(Integer, ForeignKey('homeworks.id'), nullable=True)
+    done_homework_id = Column(Integer, ForeignKey('done_homeworks.id'), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.now())
 
@@ -158,6 +181,7 @@ class Lesson(Base):
     )
 
     homework = relationship('Homework', back_populates='lesson')
+    done_homework = relationship('DoneHomework', back_populates='lesson')
     subject = relationship('Subject', back_populates='lessons')
 
 class LessonScreenshots(Base):

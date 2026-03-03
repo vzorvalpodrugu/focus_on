@@ -90,14 +90,36 @@ class LessonRepository(BaseRepository):
 
             return list(result.scalars().all())
 
+    async def get_lessons_without_done_hw(self, teacher_id: int, student_id: int) -> list[Lesson]:
+        async with self.session_factory() as session:
+            result = await session.execute(
+                select(Lesson)
+                .options(
+                    selectinload(Lesson.teacher),
+                    selectinload(Lesson.student),
+                    selectinload(Lesson.subject),
+                    selectinload(Lesson.homework).selectinload(Homework.homework_screenshots)
+                )
+                .where(
+                    and_(
+                        Lesson.teacher_id == teacher_id,
+                        Lesson.student_id == student_id,
+                        Lesson.homework_id.isnot(None),
+                        Lesson.done_homework_id.is_(None)
+                    )
+                )
+            )
+            return list(result.scalars().all())
+
 
     async def get_lessons_by_period(
             self,
             user_id: int,
             role: str,
-            period_type: str #2weeks, month, all
+            period_type: str  # '2weeks', 'all', или номер месяца '1'..'12'
     ) -> list[Lesson]:
-        # Получить занятия по роли и периоду
+        """Получить занятия по роли и периоду"""
+
         async with self.session_factory() as session:
             query = select(Lesson).options(
                 selectinload(Lesson.teacher),
@@ -105,23 +127,43 @@ class LessonRepository(BaseRepository):
                 selectinload(Lesson.subject)
             )
 
+            # Фильтр по роли
             if role == 'teacher':
                 query = query.where(Lesson.teacher_id == user_id)
-            elif role == 'student':
+            else:  # student
                 query = query.where(Lesson.student_id == user_id)
 
-            if period_type == '2weeks':
-                now = datetime.now()
-                two_weeks_ago = now - timedelta(days=14)
+            now = datetime.now()
 
+            # Фильтр по периоду
+            if period_type == '2weeks':
+                two_weeks_ago = now - timedelta(days=14)
                 query = query.where(Lesson.created_at >= two_weeks_ago)
 
-            query = query.order_by(Lesson.created_at.desc())
+            elif period_type.isdigit():  # если это число (месяц)
+                month = int(period_type)
+                year = now.year
 
+                # Начало месяца
+                start_date = datetime(year, month, 1)
+
+                # Конец месяца
+                if month == 12:
+                    end_date = datetime(year + 1, 1, 1)
+                else:
+                    end_date = datetime(year, month + 1, 1)
+
+                query = query.where(Lesson.created_at.between(start_date, end_date))
+            elif period_type == 'last':
+                query = query.order_by(Lesson.created_at.desc()).limit(1)
+
+
+            # period_type == 'all' — без фильтра по дате
+
+            query = query.order_by(Lesson.created_at.desc())
             result = await session.execute(query)
 
-            return  list(result.scalars().all())
-
+            return list(result.scalars().all())
 
 
 

@@ -3,7 +3,8 @@ from aiogram.types import CallbackQuery, Message, InputMediaPhoto
 from aiogram import F, Bot
 
 from bot.handlers.base_handler import BaseHandler
-from bot.keyboards.lesson_view_inline import choosing_period_keyboard, choice_at_next_lesson_keyboard
+from bot.keyboards.lesson_view_inline import choosing_period_keyboard, choice_at_next_lesson_keyboard, \
+    choose_month_keyboard, back_to_menu_keyboard
 from bot.keyboards.student_inline import back_to_student_menu
 from bot.config import TG_TOKEN
 from bot.states.lesson_view_states import LessonViewStates
@@ -43,7 +44,7 @@ class LessonViewHandler(BaseHandler):
 
         @self.router.callback_query(LessonViewStates.choosing_period, F.data.startswith('period_'))
         async def process_period(callback: CallbackQuery, state: FSMContext):
-            # 2. Обработка периода
+            # 2.1. Обработка периода
             period = callback.data.replace('period_', '')
 
             data = await state.get_data()
@@ -65,10 +66,60 @@ class LessonViewHandler(BaseHandler):
             await callback.message.answer(
                 f"<b>Отправьте id занятия 🔑, которое хотели бы посмотреть!</b>",
                 parse_mode='HTML',
-                reply_markup=await back_to_student_menu()
+                reply_markup=await back_to_menu_keyboard(role=user.role)
             )
 
             await state.set_state(LessonViewStates.choosing_lesson_id)
+
+        @self.router.callback_query(LessonViewStates.choosing_period, F.data.startswith('choose_month'))
+        async def process_choose_month(callback: CallbackQuery, state: FSMContext):
+            # 2.2 Выбор месяца
+            data = await state.get_data()
+            user = data.get('user')
+
+            await callback.message.answer(
+                f'<b>Выберите месяц 📆, в котором хотите просмотреть занятия!</b>',
+                parse_mode = 'HTML',
+                reply_markup=await choose_month_keyboard(role=user.role)
+            )
+
+        @self.router.callback_query(LessonViewStates.choosing_period, F.data.startswith('month_'))
+        async def process_month(callback: CallbackQuery, state: FSMContext):
+            # 2.2 Обработка месяца
+            period = callback.data.replace('month_', '')
+
+            data = await state.get_data()
+            user = data.get('user')
+
+            lessons = await self.lesson_service.repo.get_lessons_by_period(user_id=user.id, role=user.role,
+                                                                           period_type=period)
+
+            if lessons:
+                for lesson in lessons:
+                    await callback.message.answer(
+                        f"<b>id занятия 🔑: </b>{lesson.id}\n\n"
+                        f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
+                        f"<b>Ученик 👨‍🎓: </b>{lesson.student.name} \n"
+                        f"<b>Предмет 📚: </b>{lesson.subject.name.value} \n"
+                        f"<b>Тема 📝: </b>{lesson.topics}\n\n"
+                        f'<b>Дата 📅: </b>{lesson.created_at}',
+                        parse_mode='HTML'
+                    )
+
+                await callback.message.answer(
+                    f"<b>Отправьте id занятия 🔑, которое хотели бы посмотреть!</b>",
+                    parse_mode='HTML',
+                    reply_markup=await back_to_menu_keyboard(role=user.role)
+                )
+
+                await state.set_state(LessonViewStates.choosing_lesson_id)
+            else:
+                await callback.message.edit_text(
+                    f'<b>В этом месяце, у вас не было занятий.</b>\n\n'
+                    f'<b>Попробуйте выбрать другой месяц или поменяйте период :)</b>',
+                    parse_mode='HTML',
+                    reply_markup=await choosing_period_keyboard(role=user.role)
+                )
 
         @self.router.message(LessonViewStates.choosing_lesson_id)
         async def process_lesson_id(message: Message, state: FSMContext):
@@ -121,12 +172,15 @@ class LessonViewHandler(BaseHandler):
                 reply_markup=await choice_at_next_lesson_keyboard(role=user.role)
             )
 
-        @self.router.callback_query(LessonViewStates.choosing_lesson_id, F.data == 'show_one_more_lesson')
-        async def process_one_more_lesson(callback: CallbackQuery):
+        @self.router.callback_query(F.data == 'show_one_more_lesson')
+        async def process_one_more_lesson(callback: CallbackQuery, state: FSMContext):
+            user = (await state.get_data()).get('user')
+
+            await state.set_state(LessonViewStates.choosing_lesson_id)
             await callback.message.edit_text(
                 f"<b>Отправьте id занятия 🔑, которое хотели бы посмотреть!</b>",
                 parse_mode='HTML',
-                reply_markup=await back_to_student_menu()
+                reply_markup=await back_to_menu_keyboard(role=user.role)
             )
 
 

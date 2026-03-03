@@ -9,7 +9,7 @@ async def teacher_inline():
     builder.button(text='Расписание 📅', callback_data='show_schedules')
     builder.button(text='Новый урок 📄', callback_data='create_lesson')
     builder.button(text='Прикрепить ДЗ ➕', callback_data='add_homework')
-
+    builder.button(text='Занятия 📖', callback_data='show_lessons')
 
     builder.adjust(1, 1)
 
