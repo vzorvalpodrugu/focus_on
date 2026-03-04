@@ -21,3 +21,13 @@ async def back_to_student_menu():
     builder.adjust(1)
 
     return builder.as_markup()
+
+async def show_notify_lesson_student(lesson_id: int):
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='🔍 Посмотреть', callback_data=f'lesson_{lesson_id}')
+    builder.button(text='◀️ Вернуться', callback_data='back_to_student_menu')
+
+    builder.adjust(1)
+
+    return builder.as_markup()

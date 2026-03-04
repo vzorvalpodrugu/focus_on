@@ -93,9 +93,11 @@ class LessonViewHandler(BaseHandler):
 
             lessons = await self.lesson_service.repo.get_lessons_by_period(user_id=user.id, role=user.role,
                                                                            period_type=period)
+            lessons_id = []
 
             if lessons:
                 for lesson in lessons:
+                    lessons_id.append(lesson.id)
                     await callback.message.answer(
                         f"<b>id занятия 🔑: </b>{lesson.id}\n\n"
                         f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
@@ -127,10 +129,17 @@ class LessonViewHandler(BaseHandler):
             lesson_id = int(message.text)
             user = (await state.get_data()).get('user')
 
+            lessons_id = (await state.get_data()).get('lessons_id')
+            if lesson_id not in lessons_id:
+                await message.answer(
+                    f'<b>Вы не можете просмотреть данный урок.</b>\n\n'
+                    f'<b>Попробуйте ещё раз :)</b>',
+                    parse_mode='HTML'
+                )
+                return
+
             bot = Bot(token=TG_TOKEN)
 
-            if lesson_id < 0 or type(lesson_id) is not int:
-                return
 
             lesson = await self.lesson_service.repo.get_lesson_by_id(lesson_id=lesson_id)
 
@@ -166,6 +175,25 @@ class LessonViewHandler(BaseHandler):
                         media=homework_media_group
                     )
 
+            if lesson.done_homework:
+
+                done_homework_media_group = [
+                    InputMediaPhoto(media=screenshot.file_id)
+                    for screenshot in lesson.done_homework.done_homework_screenshots
+                ]
+
+                await message.answer(
+                    f'<b>Выполненное домашнее задание 📓:</b>',
+                    parse_mode='HTML'
+                )
+
+                if done_homework_media_group:
+                    await bot.send_media_group(
+                        chat_id=message.chat.id,
+                        media=done_homework_media_group
+                    )
+
+
             await message.answer(
                 text = '<b>Выберите действие 💬:</b>',
                 parse_mode='HTML',
@@ -182,6 +210,76 @@ class LessonViewHandler(BaseHandler):
                 parse_mode='HTML',
                 reply_markup=await back_to_menu_keyboard(role=user.role)
             )
+
+        @self.router.callback_query(F.data.startswith('lesson_'))
+        async def process_lesson_id(callback: CallbackQuery, state: FSMContext):
+            # Функция для отображения урока из оповещения по колбеку
+            user_id = callback.from_user.id
+
+            user = await self.user_service.get_by_tg_id(user_id)
+
+            lesson_id = int(callback.data.replace('lesson_', ''))
+
+            bot = Bot(token=TG_TOKEN)
+
+            lesson = await self.lesson_service.repo.get_lesson_by_id(lesson_id=lesson_id)
+
+            lesson_media_group = [
+                InputMediaPhoto(media=screenshot.file_id)
+                for screenshot in lesson.lesson_screenshots
+            ]
+            await callback.message.answer(
+                f'<b>Конспект 📝:</b>',
+                parse_mode='HTML'
+            )
+            if lesson_media_group:
+                await bot.send_media_group(
+                    chat_id=callback.message.chat.id,
+                    media=lesson_media_group
+                )
+
+            if lesson.homework:
+
+                homework_media_group = [
+                    InputMediaPhoto(media=screenshot.file_id)
+                    for screenshot in lesson.homework.homework_screenshots
+                ]
+
+                await callback.message.answer(
+                    f'<b>Домашнее задание 📓:</b>',
+                    parse_mode='HTML'
+                )
+
+                if homework_media_group:
+                    await bot.send_media_group(
+                        chat_id=callback.message.chat.id,
+                        media=homework_media_group
+                    )
+
+            if lesson.done_homework:
+
+                done_homework_media_group = [
+                    InputMediaPhoto(media=screenshot.file_id)
+                    for screenshot in lesson.done_homework.done_homework_screenshots
+                ]
+
+                await callback.message.answer(
+                    f'<b>Выполненное домашнее задание 📓:</b>',
+                    parse_mode='HTML'
+                )
+
+                if done_homework_media_group:
+                    await bot.send_media_group(
+                        chat_id=callback.message.chat.id,
+                        media=done_homework_media_group
+                    )
+
+            await callback.message.answer(
+                text = f'<b>Выберите действие :</b>',
+                parse_mode='HTML',
+                reply_markup=await back_to_menu_keyboard(role=user.role)
+            )
+
 
 
 

@@ -313,9 +313,11 @@ class LessonCreateHandler(BaseHandler):
             await state.update_data(user=user)
 
             lessons = await self.lesson_service.repo.get_lessons_without_done_hw(user_id=user.id)
+            lessons_id = []
 
             if lessons:
                 for lesson in lessons:
+                    lessons_id.append(lesson.id)
                     await callback.message.answer(
                         f"<b>id занятия 🔑: </b>{lesson.id}\n\n"
                         f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
@@ -326,12 +328,15 @@ class LessonCreateHandler(BaseHandler):
                         parse_mode='HTML'
                     )
 
+
+
                 await callback.message.answer(
                     f"<b>Отправьте id занятия 🔑, к которому хотели бы добавить ДЗ!</b>",
                     parse_mode='HTML',
                     reply_markup=await back_to_menu_keyboard(role=user.role)
                 )
 
+                await state.update_data(lessons_id=lessons_id)
                 await state.set_state(RegisterDoneHomework.choosing_lesson_id)
 
             else:
@@ -346,7 +351,14 @@ class LessonCreateHandler(BaseHandler):
             # 2. Обработка id урока
             lesson_id = int(message.text)
 
-            if lesson_id < 0:
+            lessons_id = (await state.get_data()).get('lessons_id')
+
+            if lesson_id not in lessons_id:
+                await message.answer(
+                    f'<b>Вы не можете прикрепить ДЗ к данному уроку.</b>\n\n'
+                    f'<b>Попробуйте ещё раз :)</b>',
+                    parse_mode='HTML'
+                )
                 return
 
             user = (await state.get_data()).get('user')

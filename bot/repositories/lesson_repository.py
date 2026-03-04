@@ -19,6 +19,7 @@ class LessonRepository(BaseRepository):
                     selectinload(Lesson.student),
                     selectinload(Lesson.subject),
                     selectinload(Lesson.homework).selectinload(Homework.homework_screenshots),
+                    selectinload(Lesson.done_homework).selectinload(DoneHomework.done_homework_screenshots),
                     selectinload(Lesson.lesson_screenshots)
                 )
                 .where(Lesson.id == lesson_id)

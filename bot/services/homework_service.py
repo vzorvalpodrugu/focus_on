@@ -1,5 +1,5 @@
-from bot.keyboards.student_inline import back_to_student_menu
-from bot.keyboards.teacher_inline import back_to_teacher_menu_keyboard
+from bot.keyboards.student_inline import back_to_student_menu, show_notify_lesson_student
+from bot.keyboards.teacher_inline import back_to_teacher_menu_keyboard, show_notify_lesson_teacher
 from bot.services.base_service import BaseService
 from aiogram import Bot
 from bot.config import TG_TOKEN
@@ -17,7 +17,7 @@ class HomeworkService(BaseService):
             text=f"<b>👨‍🏫 Учитель {teacher_name} добавил домашнее задание к занятию {lesson_id}🔑 по {subject_name}!✅</b>\n\n"
             "Обязательно проверьте!",
             parse_mode='HTML',
-            reply_markup=await back_to_student_menu()
+            reply_markup=await show_notify_lesson_student(lesson_id)
         )
 
     async def notify_teacher_add_done_homework(self, teacher_tg_id:int, lesson_id: int, student_name: str, subject_name:str):
@@ -28,5 +28,5 @@ class HomeworkService(BaseService):
             text=f"<b>👨‍🏫 Ученик {student_name} добавил выполненное домашнее задание к занятию {lesson_id}🔑 по {subject_name}!✅</b>\n\n"
                  "Обязательно проверьте!",
             parse_mode='HTML',
-            reply_markup=await back_to_teacher_menu_keyboard()
+            reply_markup=await show_notify_lesson_teacher(lesson_id)
         )
