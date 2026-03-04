@@ -1,13 +1,40 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from bot.models import Lesson
+
+
 async def student_inline():
     builder = InlineKeyboardBuilder()
 
     builder.button(text='Профиль 👤', callback_data='show_profile')
     builder.button(text='Расписание 📅', callback_data='show_students_schedule')
     builder.button(text='Занятия 📖', callback_data='show_lessons')
-    builder.button(text='Прикрепить ДЗ ➕', callback_data='add_done_homework')
+    builder.button(text='Домашние задания 📓', callback_data='show_homeworks')
+
+    builder.adjust(1)
+
+    return builder.as_markup()
+
+
+async def student_homework_keyboard(lessons: list[Lesson]):
+    builder = InlineKeyboardBuilder()
+
+    for lesson in lessons:
+        builder.button(text=f'Занятие {lesson.id} 🔑', callback_data=f'lesson_{lesson.id}')
+
+    builder.button(text='◀️ Вернуться', callback_data='back_to_student_menu')
+
+    builder.adjust(1)
+
+    return builder.as_markup()
+
+async def student_done_homework_keyboard():
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='Прикрепить выполненное ДЗ ➕', callback_data='add_done_homework')
+    builder.button(text='Выбрать другое занятие 🔑', callback_data='show_homeworks')
+    builder.button(text='◀️ Вернуться', callback_data='back_to_student_menu')
 
     builder.adjust(1)
 

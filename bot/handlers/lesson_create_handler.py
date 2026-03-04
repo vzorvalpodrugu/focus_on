@@ -8,7 +8,7 @@ from bot.keyboards.create_lesson_inline import choosing_student_keyboard, choosi
     screenshots_done_keyboard, homework_from_lesson_create_done_keyboard, choose_homework_keyboard, \
     homework_done_keyboard, done_homework_done_keyboard
 from bot.keyboards.lesson_view_inline import back_to_menu_keyboard
-from bot.keyboards.student_inline import back_to_student_menu
+from bot.keyboards.student_inline import back_to_student_menu, student_done_homework_keyboard
 from bot.keyboards.teacher_inline import back_to_teacher_menu_keyboard, teacher_inline
 from bot.states.register_done_homework import RegisterDoneHomework
 from bot.states.register_homework import RegisterHomework
@@ -304,63 +304,11 @@ class LessonCreateHandler(BaseHandler):
         # Прикрепление ДЗ (ученик прикрепляет решенное ДЗ)
         # ----------------------------------------------------------------
 
-        @self.router.callback_query(F.data == 'add_done_homework')
-        async def process_done_homework(callback: CallbackQuery, state: FSMContext):
-            # 1. Отображение всех lesson без выполненного ДЗ
-            user_tg_id = callback.from_user.id
-
-            user = await self.user_service.repo.get_by_tg_id(user_tg_id)
-
-            await state.update_data(user=user)
-
-            lessons = await self.lesson_service.repo.get_lessons_without_done_hw(user_id=user.id)
-            lessons_id = []
-
-            if lessons:
-                for lesson in lessons:
-                    lessons_id.append(lesson.id)
-                    await callback.message.answer(
-                        f"<b>id занятия 🔑: </b>{lesson.id}\n\n"
-                        f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
-                        f"<b>Ученик 👨‍🎓: </b>{lesson.student.name} \n"
-                        f"<b>Предмет 📚: </b>{lesson.subject.name.value} \n"
-                        f"<b>Тема 📝: </b>{lesson.topics}\n\n"
-                        f'<b>Дата 📅: </b>{lesson.created_at}',
-                        parse_mode='HTML'
-                    )
-
-
-
-                await callback.message.answer(
-                    f"<b>Отправьте id занятия 🔑, к которому хотели бы добавить ДЗ!</b>",
-                    parse_mode='HTML',
-                    reply_markup=await back_to_menu_keyboard(role=user.role)
-                )
-
-                await state.update_data(lessons_id=lessons_id)
-                await state.set_state(RegisterDoneHomework.choosing_lesson_id)
-
-            else:
-                await callback.message.edit_text(
-                    f'<b>У вас выполнены все ДЗ. Отдыхайте и радуйтесь жизни :D</b>\n\n',
-                    parse_mode='HTML',
-                    reply_markup=await back_to_menu_keyboard(role=user.role)
-                )
-
-        @self.router.message(RegisterDoneHomework.choosing_lesson_id)
-        async def process_lesson_id(message: Message, state: FSMContext):
+        @self.router.callback_query(RegisterDoneHomework.choosing_lesson_id, F.data.startswith('lesson_'))
+        async def process_lesson_id(callback: CallbackQuery, state: FSMContext):
             # 2. Обработка id урока
-            lesson_id = int(message.text)
+            lesson_id = int(callback.data.replace('lesson_', ''))
 
-            lessons_id = (await state.get_data()).get('lessons_id')
-
-            if lesson_id not in lessons_id:
-                await message.answer(
-                    f'<b>Вы не можете прикрепить ДЗ к данному уроку.</b>\n\n'
-                    f'<b>Попробуйте ещё раз :)</b>',
-                    parse_mode='HTML'
-                )
-                return
 
             user = (await state.get_data()).get('user')
 
@@ -374,13 +322,13 @@ class LessonCreateHandler(BaseHandler):
                 for screenshot in lesson.lesson_screenshots
             ]
 
-            await message.answer(
+            await callback.message.answer(
                 f'<b>Конспект 📝:</b>',
                 parse_mode='HTML'
             )
             if lesson_media_group:
                 await bot.send_media_group(
-                    chat_id=message.chat.id,
+                    chat_id=callback.message.chat.id,
                     media=lesson_media_group
                 )
 
@@ -391,28 +339,35 @@ class LessonCreateHandler(BaseHandler):
                     for screenshot in lesson.homework.homework_screenshots
                 ]
 
-                await message.answer(
+                await callback.message.answer(
                     f'<b>Домашнее задание 📓:</b>',
                     parse_mode='HTML'
                 )
 
                 if homework_media_group:
                     await bot.send_media_group(
-                        chat_id=message.chat.id,
+                        chat_id=callback.message.chat.id,
                         media=homework_media_group
                     )
 
             await state.update_data(lesson_id=lesson_id)
 
-            await message.answer(
-                f'<b>Пришлите к этому уроку выполненное ДЗ 📝:</b>\n\n'
-                f'<b>Можно по одному фото, можно сразу несколько!</b>',
+            await callback.message.answer(
+                f'<b>Выберите действие: </b>\n\n',
                 parse_mode='HTML',
-                reply_markup=await back_to_menu_keyboard(role=user.role)
+                reply_markup=await student_done_homework_keyboard()
             )
+
+        @self.router.callback_query(RegisterDoneHomework.choosing_lesson_id, F.data == 'add_done_homework')
+        async def process_lesson_id(callback: CallbackQuery, state: FSMContext):
 
             await state.set_state(RegisterDoneHomework.choosing_done_homework_screenshots)
 
+            await callback.message.edit_text(
+                f'<b>Пришлите скриншоты 📷 выполненного ДЗ 📓: </b>\n\n'
+                f'<b>Можно по одному или сразу несколько скриншотов!</b>',
+                parse_mode='HTML'
+            )
 
         @self.router.message(RegisterDoneHomework.choosing_done_homework_screenshots, F.photo)
         async def process_done_homework_screenshots(message: Message, state: FSMContext, album: list[Message] = None):
@@ -606,7 +561,13 @@ class LessonCreateHandler(BaseHandler):
             reply_markup=await teacher_inline()
         )
 
-        await self.lesson_service.notify_student_add_lesson(student_tg_id=student.tg_id, teacher_name=teacher.name, subject_name=subject.name.value)
+        await self.lesson_service.notify_student_add_lesson(
+            student_tg_id=student.tg_id,
+            teacher_name=teacher.name,
+            subject_name=subject.name.value,
+            lesson_id=lesson.id
+
+        )
 
 
         await state.clear()

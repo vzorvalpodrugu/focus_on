@@ -5,9 +5,10 @@ from aiogram import F, Bot
 from bot.handlers.base_handler import BaseHandler
 from bot.keyboards.lesson_view_inline import choosing_period_keyboard, choice_at_next_lesson_keyboard, \
     choose_month_keyboard, back_to_menu_keyboard
-from bot.keyboards.student_inline import back_to_student_menu
+from bot.keyboards.student_inline import back_to_student_menu, student_homework_keyboard
 from bot.config import TG_TOKEN
 from bot.states.lesson_view_states import LessonViewStates
+from bot.states.register_done_homework import RegisterDoneHomework
 
 
 class LessonViewHandler(BaseHandler):
@@ -279,6 +280,48 @@ class LessonViewHandler(BaseHandler):
                 parse_mode='HTML',
                 reply_markup=await back_to_menu_keyboard(role=user.role)
             )
+
+        @self.router.callback_query(F.data == 'show_homeworks')
+        async def process_show_homeworks(callback: CallbackQuery, state: FSMContext):
+            # Показать все невыполненные домашки ученика
+            user_tg_id = callback.from_user.id
+
+            user = await self.user_service.repo.get_by_tg_id(user_tg_id)
+
+            await state.update_data(user=user)
+
+            lessons = await self.lesson_service.repo.get_lessons_without_done_hw(user_id=user.id)
+            lessons_id = []
+
+            if lessons:
+                for lesson in lessons:
+                    lessons_id.append(lesson.id)
+                    await callback.message.answer(
+                        f"<b>id занятия 🔑: </b>{lesson.id}\n\n"
+                        f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
+                        f"<b>Ученик 👨‍🎓: </b>{lesson.student.name} \n"
+                        f"<b>Предмет 📚: </b>{lesson.subject.name.value} \n"
+                        f"<b>Тема 📝: </b>{lesson.topics}\n\n"
+                        f'<b>Дата 📅: </b>{lesson.created_at}',
+                        parse_mode='HTML'
+                    )
+
+                await callback.message.answer(
+                    f"<b>По вышеуказанным занятиям требуется выполнить ДЗ 📓.</b>\n\n"
+                    f'<b>Выберите действие: </b>',
+                    parse_mode='HTML',
+                    reply_markup=await student_homework_keyboard(lessons)
+                )
+
+                await state.set_state(RegisterDoneHomework.choosing_lesson_id)
+                await state.update_data(lessons_id=lessons_id)
+
+            else:
+                await callback.message.edit_text(
+                    f'<b>У вас выполнены все ДЗ. Отдыхайте и радуйтесь жизни :D</b>\n\n',
+                    parse_mode='HTML',
+                    reply_markup=await back_to_menu_keyboard(role=user.role)
+                )
 
 
 
