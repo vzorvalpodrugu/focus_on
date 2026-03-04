@@ -9,7 +9,8 @@ from bot.keyboards.create_lesson_inline import choosing_student_keyboard, choosi
     homework_done_keyboard, done_homework_done_keyboard
 from bot.keyboards.lesson_view_inline import back_to_menu_keyboard
 from bot.keyboards.student_inline import back_to_student_menu, student_done_homework_keyboard
-from bot.keyboards.teacher_inline import back_to_teacher_menu_keyboard, teacher_inline
+from bot.keyboards.teacher_inline import back_to_teacher_menu_keyboard, teacher_inline, teacher_homeworks_keyboard, \
+    choose_students_without_hw, teacher_lessons_without_hw, teacher_done_homework_keyboard
 from bot.states.register_done_homework import RegisterDoneHomework
 from bot.states.register_homework import RegisterHomework
 from bot.states.register_lesson import RegisterLesson
@@ -210,49 +211,104 @@ class LessonCreateHandler(BaseHandler):
         # ----------------------------------------------------------------
         # Прикрепление ДЗ (учитель прикрепляет ДЗ, которое надо решить)
         # ----------------------------------------------------------------
-        @self.router.callback_query(F.data == 'add_homework')
-        async def process_add_homework(callback: CallbackQuery, state: FSMContext):
-            # 1. Отображение всех lessons без homework
+        @self.router.callback_query(F.data == 'show_homeworks_for_teacher')
+        async def process_show_homeworks(callback:CallbackQuery, state: FSMContext):
+            await callback.message.edit_text(
+                f'<b>Выберите действие: </b>',
+                parse_mode='HTML',
+                reply_markup=await teacher_homeworks_keyboard()
+            )
+
+
+        @self.router.callback_query(F.data == 'show_students_without_hw')
+        async def process_show_students(callback:CallbackQuery, state: FSMContext):
+            await state.set_state(RegisterHomework.choosing_student)
+
             teacher_tg_id = callback.from_user.id
+
             teacher = await self.user_service.repo.get_by_tg_id(teacher_tg_id)
 
-            lessons = await self.lesson_service.repo.get_lessons_without_hw(teacher_id=teacher.id)
+            await state.update_data(teacher=teacher)
+
+            lessons = await self.lesson_service.repo.get_lessons_without_hw(teacher.id)
+
+            await state.update_data(lessons=lessons)
+
+            students_all_id = [lesson.student.id for lesson in lessons]
+
+            students_id = []
+
+            students = []
 
             for lesson in lessons:
-                await callback.message.answer(
-                    f"<b>id занятия 🔑: </b>{lesson.id}\n\n"
-                    f"<b>Учитель 👨‍🏫:</b> {teacher.name} \n"
-                    f"<b>Ученик 👨‍🎓: </b>{lesson.student.name} \n"
-                    f"<b>Предмет 📚: </b>{lesson.subject.name.value} \n"
-                    f"<b>Тема 📝: </b>{lesson.topics}\n"
-                    f'<b>Дата 📅: </b>{lesson.created_at}\n',
-                    parse_mode='HTML'
+                if lesson.student.id not in students_id:
+                    students_id.append(lesson.student.id)
+                    students.append(lesson.student)
+
+            if students:
+                await callback.message.edit_text(
+                    f'<b>Выберите ученика 👨‍🎓, которому требуется добавить ДЗ📓</b>',
+                    parse_mode='HTML',
+                    reply_markup=await choose_students_without_hw(students)
+                )
+            else:
+                await callback.message.edit_text(
+                    f'<b>У всех учеников 👨‍🎓 уже есть ДЗ📓</b>\n\n'
+                    f'<b>Отдыхайте!</b>',
+                    parse_mode='HTML',
+                    reply_markup=await back_to_teacher_menu_keyboard()
                 )
 
-            await callback.message.answer(
-                f"<b>Отправьте id занятия 🔑, к которому хотите прикрепить ДЗ!</b>",
-                parse_mode='HTML',
-                reply_markup= await back_to_teacher_menu_keyboard()
-            )
+        @self.router.callback_query(RegisterHomework.choosing_lesson_id, F.data.startswith('show_homeworks_student_'))
+        @self.router.callback_query(RegisterHomework.choosing_student, F.data.startswith('student_'))
+        async def process_student_id(callback: CallbackQuery, state: FSMContext):
+            state_now = await state.get_state()
+
+            if state_now == RegisterHomework.choosing_lesson_id:
+                student_id = int(callback.data.replace('show_homeworks_student_', ''))
+            elif state_now == RegisterHomework.choosing_student:
+                student_id = int(callback.data.replace('student_', ''))
+
+            lessons_all = (await state.get_data()).get('lessons')
 
             await state.set_state(RegisterHomework.choosing_lesson_id)
 
-        @self.router.message(RegisterHomework.choosing_lesson_id)
-        async def process_id_lesson(message: Message, state: FSMContext):
-            # 2. Обработка конкретного lesson
-            lesson_id = int(message.text)
+            await state.update_data(student_id=student_id)
 
-            lesson = await self.lesson_service.repo.get_lesson_by_id(lesson_id)
+            lessons = []
 
-            await state.update_data(lesson=lesson)
+            for lesson in lessons_all:
+                if lesson.student.id == student_id:
+                    lessons.append(lesson)
 
-            await message.answer(
-                f"<b>{lesson.teacher.name}, пришлите скриншоты 📝 домашнего задания!</b>\n\n"
-                '<b>Можно сразу несколько!</b>',
+                    await callback.message.answer(
+                        f"<b>id занятия 🔑: </b>{lesson.id}\n\n"
+                        f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
+                        f"<b>Ученик 👨‍🎓: </b>{lesson.student.name} \n"
+                        f"<b>Предмет 📚: </b>{lesson.subject.name.value} \n"
+                        f"<b>Тема 📝: </b>{lesson.topics}\n\n"
+                        f'<b>Дата 📅: </b>{lesson.created_at}',
+                        parse_mode='HTML'
+                    )
+
+            await callback.message.answer(
+                f'<b>Выберите занятие 🔑, к которому хотите прикрепить ДЗ📓</b>',
+                parse_mode = 'HTML',
+                reply_markup=await teacher_lessons_without_hw(lessons)
+            )
+
+
+
+        @self.router.callback_query(F.data == 'add_homework')
+        async def process_add_homework(callback: CallbackQuery, state: FSMContext):
+            await callback.message.answer(
+                f"<b>Пришлите скриншоты 📝 домашнего задания 📓!</b>\n\n"
+                '<b>Можно по одному или сразу несколько!</b>',
                 parse_mode='HTML'
             )
 
             await state.set_state(RegisterHomework.choosing_homework_screenshots)
+
 
         @self.router.message(RegisterHomework.choosing_homework_screenshots, F.photo)
         async def process_homework_screenshots(message: Message, state: FSMContext, album: list[Message] = None):
@@ -304,6 +360,7 @@ class LessonCreateHandler(BaseHandler):
         # Прикрепление ДЗ (ученик прикрепляет решенное ДЗ)
         # ----------------------------------------------------------------
 
+        @self.router.callback_query(RegisterHomework.choosing_lesson_id, F.data.startswith('lesson_'))
         @self.router.callback_query(RegisterDoneHomework.choosing_lesson_id, F.data.startswith('lesson_'))
         async def process_lesson_id(callback: CallbackQuery, state: FSMContext):
             # 2. Обработка id урока
@@ -352,11 +409,22 @@ class LessonCreateHandler(BaseHandler):
 
             await state.update_data(lesson_id=lesson_id)
 
-            await callback.message.answer(
-                f'<b>Выберите действие: </b>\n\n',
-                parse_mode='HTML',
-                reply_markup=await student_done_homework_keyboard()
-            )
+            state_now = await state.get_state()
+            if state_now == RegisterDoneHomework.choosing_lesson_id:
+                await callback.message.answer(
+                    f'<b>Выберите действие: </b>\n\n',
+                    parse_mode='HTML',
+                    reply_markup=await student_done_homework_keyboard()
+                )
+
+            elif state_now == RegisterHomework.choosing_lesson_id:
+                student_id = (await state.get_data()).get('student_id')
+
+                await callback.message.answer(
+                    f'<b>Выберите действие: </b>\n\n',
+                    parse_mode='HTML',
+                    reply_markup=await teacher_done_homework_keyboard(student_id)
+                )
 
         @self.router.callback_query(RegisterDoneHomework.choosing_lesson_id, F.data == 'add_done_homework')
         async def process_lesson_id(callback: CallbackQuery, state: FSMContext):

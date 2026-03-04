@@ -1,5 +1,5 @@
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
+from bot.models import User, Lesson
 
 
 async def teacher_inline():
@@ -8,12 +8,63 @@ async def teacher_inline():
     builder.button(text='Мои ученики 👨‍🎓', callback_data='show_students')
     builder.button(text='Расписание 📅', callback_data='show_schedules')
     builder.button(text='Новый урок 📄', callback_data='create_lesson')
-    builder.button(text='Прикрепить ДЗ ➕', callback_data='add_homework')
+    builder.button(text='Домашние задания 📓', callback_data='show_homeworks_for_teacher')
+    # builder.button(text='Прикрепить ДЗ ➕', callback_data='add_homework')
     builder.button(text='Занятия 📖', callback_data='show_lessons')
 
     builder.adjust(1, 1)
 
     return builder.as_markup()
+
+async def teacher_homeworks_keyboard():
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='Ученики без ДЗ 📓', callback_data='show_students_without_hw')
+    builder.button(text='◀️ Назад', callback_data='back_to_teacher_menu')
+
+    builder.adjust(1, 1)
+
+    return builder.as_markup()
+
+
+async def teacher_lessons_without_hw(lessons: list[Lesson]):
+    builder = InlineKeyboardBuilder()
+
+    for lesson in lessons:
+        builder.button(text=f'Занятие {lesson.id} 🔑', callback_data=f'lesson_{lesson.id}')
+
+    builder.button(text='◀️ Назад', callback_data='back_to_teacher_menu')
+
+    builder.adjust(1, 1)
+
+    return builder.as_markup()
+
+
+async def teacher_done_homework_keyboard(student_id: int):
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='Прикрепить ДЗ ➕', callback_data='add_homework')
+    builder.button(text='Выбрать другое занятие 🔑', callback_data=f'show_homeworks_student_{student_id}')
+    builder.button(text='◀️ Вернуться', callback_data='back_to_teacher_menu')
+
+    builder.adjust(1)
+
+    return builder.as_markup()
+
+
+async def choose_students_without_hw(students: list[User]):
+    builder = InlineKeyboardBuilder()
+
+    for student in students:
+        builder.button(text=f'{student.name} 👨‍🎓 / {student.class_number} класс 🎓', callback_data=f'student_{student.id}')
+
+    builder.button(text='◀️ Назад', callback_data='back_to_teacher_menu')
+
+    builder.adjust(1, 1)
+
+    return builder.as_markup()
+
+
 
 async def back_to_teacher_menu_keyboard():
     builder = InlineKeyboardBuilder()
