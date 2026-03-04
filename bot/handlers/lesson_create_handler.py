@@ -231,7 +231,8 @@ class LessonCreateHandler(BaseHandler):
 
             await callback.message.answer(
                 f"<b>Отправьте id занятия 🔑, к которому хотите прикрепить ДЗ!</b>",
-                parse_mode='HTML'
+                parse_mode='HTML',
+                reply_markup= await back_to_teacher_menu_keyboard()
             )
 
             await state.set_state(RegisterHomework.choosing_lesson_id)
