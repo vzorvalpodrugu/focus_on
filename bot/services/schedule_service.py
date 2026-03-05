@@ -22,7 +22,8 @@ class ScheduleService(BaseService):
             day: DaysEnum,
             time: str,
             duration: int,
-            cost: int
+            cost: int,
+            link: str | None
     ):
 
         schedule = await self.repo.create_schedule(
@@ -32,7 +33,8 @@ class ScheduleService(BaseService):
             day,
             time,
             duration,
-            cost
+            cost,
+            link
         )
 
 

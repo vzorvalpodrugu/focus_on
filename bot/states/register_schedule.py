@@ -7,3 +7,4 @@ class RegisterSchedule(StatesGroup):
     choosing_time = State()
     choosing_duration = State()
     choosing_cost = State()
+    choosing_link = State()

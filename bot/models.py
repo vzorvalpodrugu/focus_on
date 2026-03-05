@@ -97,6 +97,7 @@ class Schedule(Base):
     time = Column(String, nullable=False)
     duration = Column(Integer, nullable=False)
     cost = Column(Integer, nullable=False)
+    link = Column(String, nullable=True)
 
     teacher = relationship('User', foreign_keys=[teacher_id])
     student = relationship('User', foreign_keys=[student_id])

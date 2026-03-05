@@ -9,7 +9,6 @@ async def teacher_inline():
     builder.button(text='Расписание 📅', callback_data='show_schedules')
     builder.button(text='Новый урок 📄', callback_data='create_lesson')
     builder.button(text='Домашние задания 📓', callback_data='show_homeworks_for_teacher')
-    # builder.button(text='Прикрепить ДЗ ➕', callback_data='add_homework')
     builder.button(text='Занятия 📖', callback_data='show_lessons')
 
     builder.adjust(1, 1)
@@ -20,6 +19,29 @@ async def teacher_homeworks_keyboard():
     builder = InlineKeyboardBuilder()
 
     builder.button(text='Ученики без ДЗ 📓', callback_data='show_students_without_hw')
+    builder.button(text='Ученики без выполненного ДЗ 📓⚠️', callback_data='show_students_without_done_hw')
+    builder.button(text='◀️ Назад', callback_data='back_to_teacher_menu')
+
+    builder.adjust(1, 1)
+
+    return builder.as_markup()
+
+async def students_without_done_hw_keyboard(students: list[User]):
+    builder = InlineKeyboardBuilder()
+
+    for student in students:
+        builder.button(text=f'{student.name} 👨‍🎓 / {student.class_number} класс 🎓', callback_data=f'student_{student.id}')
+    builder.button(text='◀️ Назад', callback_data='back_to_teacher_menu')
+
+    builder.adjust(1, 1)
+
+    return builder.as_markup()
+
+async def lessons_without_done_homework(lessons_id: list[Lesson]):
+    builder = InlineKeyboardBuilder()
+
+    for lesson_id in lessons_id:
+        builder.button(text=f'Занятие {lesson_id} 🔑', callback_data=f'lesson_{lesson_id}')
     builder.button(text='◀️ Назад', callback_data='back_to_teacher_menu')
 
     builder.adjust(1, 1)

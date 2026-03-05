@@ -44,13 +44,23 @@ class TeacherSchedulesHandler(BaseHandler):
                     f'<b>Ваше расписание:</b>\n\n'
                 )
                 for schedule in schedules:
-                    text += (f'<b>Учитель 👨‍🏫:</b> {schedule.teacher.name}\n'
-                    f'<b>Ученик 👨‍🎓:</b> {schedule.student.name}\n'
-                    f'<b>Предмет 📚:</b> {schedule.subject.name.value}\n'
-                    f'<b>День недели 📅:</b> {schedule.day.value}\n'
-                    f'<b>Время ⏰:</b> {schedule.time}\n'
-                    f'<b>Длительность ⏱️:</b> {schedule.duration}\n'
-                    f'<b>Стоимость занятия 💰:</b> {schedule.cost}\n\n\n')
+                    if schedule.link:
+                        text += (f'<b>Учитель 👨‍🏫:</b> {schedule.teacher.name}\n'
+                                 f'<b>Ученик 👨‍🎓:</b> {schedule.student.name}\n'
+                                 f'<b>Предмет 📚:</b> {schedule.subject.name.value}\n'
+                                 f'<b>День недели 📅:</b> {schedule.day.value}\n'
+                                 f'<b>Время ⏰:</b> {schedule.time}\n'
+                                 f'<b>Длительность ⏱️:</b> {schedule.duration}\n'
+                                 f'<b>Стоимость занятия 💰:</b> {schedule.cost}\n'
+                                 f'<b>Ссылка на занятие 🖥️: {schedule.link}</b>\n\n\n')
+                    else:
+                        text += (f'<b>Учитель 👨‍🏫:</b> {schedule.teacher.name}\n'
+                                 f'<b>Ученик 👨‍🎓:</b> {schedule.student.name}\n'
+                                 f'<b>Предмет 📚:</b> {schedule.subject.name.value}\n'
+                                 f'<b>День недели 📅:</b> {schedule.day.value}\n'
+                                 f'<b>Время ⏰:</b> {schedule.time}\n'
+                                 f'<b>Длительность ⏱️:</b> {schedule.duration}\n'
+                                 f'<b>Стоимость занятия 💰:</b> {schedule.cost}\n\n\n')
 
             else:
                 text = '<b>Пока у вас нет занятий.</b>\n\nМожет Вы забыли добавить расписание учеников?'
@@ -138,7 +148,23 @@ class TeacherSchedulesHandler(BaseHandler):
 
             await state.update_data(cost=cost)
 
+            await message.answer(
+                f'<b>Вы можете приложить ссылку 🖥️ на онлайн встречу: </b>\n\n'
+                f'<b>Она будет отображаться Вам и ученику перед занятием!</b>',
+                parse_mode='HTML'
+            )
+
+            await state.set_state(RegisterSchedule.choosing_link)
+
+
+        @self.router.message(RegisterSchedule.choosing_link)
+        async def process_cost(message: Message, state: FSMContext):
+            link = message.text
+
+            await state.update_data(link=link)
+
             await self._finish_schedule_registration(message, state)
+
 
     async def _finish_schedule_registration(self, message: Message, state: FSMContext):
         data = await state.get_data()
@@ -151,6 +177,7 @@ class TeacherSchedulesHandler(BaseHandler):
             time = data['time'],
             duration = data['duration'],
             cost = data['cost'],
+            link = data['link']
         )
 
         student = await self.user_service.repo.get_user_by_id(data['student_id'])
@@ -166,6 +193,7 @@ class TeacherSchedulesHandler(BaseHandler):
                 f'<b>Время ⏰:</b> {data['time']}\n'
                 f'<b>Длительность ⏱️:</b> {data['duration']}\n'
                 f'<b>Стоимость занятия 💰:</b> {data['cost']}\n'
+                f'<b>Ссылка на занятие 🖥️: {data['link']}</b>'
             )
 
             await self.schedule_service.notify_student_add_schedule(student_tg_id = student.tg_id, teacher_name=data.get('teacher').name)

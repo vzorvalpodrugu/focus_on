@@ -7,8 +7,11 @@ from bot.keyboards.lesson_view_inline import choosing_period_keyboard, choice_at
     choose_month_keyboard, back_to_menu_keyboard
 from bot.keyboards.student_inline import back_to_student_menu, student_homework_keyboard
 from bot.config import TG_TOKEN
+from bot.keyboards.teacher_inline import students_without_done_hw_keyboard, back_to_teacher_menu_keyboard, \
+    lessons_without_done_homework
 from bot.states.lesson_view_states import LessonViewStates
 from bot.states.register_done_homework import RegisterDoneHomework
+from bot.states.view_students_without_done_hw_state import ViewStudentsWithoutDoneHw
 
 
 class LessonViewHandler(BaseHandler):
@@ -329,6 +332,134 @@ class LessonViewHandler(BaseHandler):
                     parse_mode='HTML',
                     reply_markup=await back_to_menu_keyboard(role=user.role)
                 )
+
+
+        @self.router.callback_query(F.data == 'show_students_without_done_hw')
+        async def process_students(callback: CallbackQuery, state: FSMContext):
+            # 1. Отображение учеников без выполненного ДЗ
+            teacher_tg_id = callback.from_user.id
+
+            teacher = await self.user_service.get_by_tg_id(teacher_tg_id)
+
+            lessons = await self.lesson_service.repo.get_lessons_without_done_hw(user_id=teacher.id)
+
+            await state.update_data(lessons = lessons)
+
+            if lessons:
+                students_all = [lesson.student for lesson in lessons]
+
+                unique_students_id = []
+                students = []
+
+                for student in students_all:
+                    if student.id not in unique_students_id:
+                        unique_students_id.append(student.id)
+                        students.append(student)
+
+                await callback.message.edit_text(
+                    f'<b>Выберите ученика 👨‍🎓, у которого нет выполненного ДЗ 📓</b>\n\n'
+                    f'<b>Обратите внимание, что в списке только ученики с долгами⚠️</b>',
+                    parse_mode='HTML',
+                    reply_markup=await students_without_done_hw_keyboard(students)
+                )
+
+                await state.set_state(ViewStudentsWithoutDoneHw.choosing_student)
+
+            else:
+                await callback.message.edit_text(
+                    f'<b>Все ученики 👨‍🎓 уже выполнили свои ДЗ 📓!</b>',
+                    parse_mode='HTML',
+                    reply_markup=await back_to_teacher_menu_keyboard()
+                )
+
+        @self.router.callback_query(ViewStudentsWithoutDoneHw.choosing_student, F.data.startswith('student_'))
+        async def process_student_id(callback: CallbackQuery, state: FSMContext):
+            # 2. Отображение уроков с невыполненными ДЗ ученика со student_id
+            student_id = int(callback.data.replace('student_', ''))
+            lessons_all = (await state.get_data()).get('lessons')
+
+            lessons = [lesson for lesson in lessons_all if lesson.student.id == student_id]
+
+            lessons_id = []
+            for lesson in lessons:
+                lessons_id.append(lesson.id)
+                await callback.message.answer(
+                    f"<b>id занятия 🔑: </b>{lesson.id}\n\n"
+                    f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
+                    f"<b>Ученик 👨‍🎓: </b>{lesson.student.name} \n"
+                    f"<b>Предмет 📚: </b>{lesson.subject.name.value} \n"
+                    f"<b>Тема 📝: </b>{lesson.topics}\n\n"
+                    f'<b>Дата 📅: </b>{lesson.created_at}',
+                    parse_mode='HTML'
+                )
+
+            await callback.message.answer(
+                f"<b>Выберите нужное занятие 🔑: </b>\n\n"
+                f"<b>Обратите внимание, что в списке только те занятия 🔑, где долг ⚠️ по ДЗ!</b>",
+                parse_mode='HTML',
+                reply_markup=await lessons_without_done_homework(lessons_id)
+            )
+
+            await state.set_state(ViewStudentsWithoutDoneHw.choosing_lesson)
+
+
+        @self.router.callback_query(ViewStudentsWithoutDoneHw.choosing_lesson, F.data.startswith('lesson_'))
+        async def process_lesson_id(callback: CallbackQuery, state: FSMContext):
+            # 3. Отображение урока с невыполненной ДЗ ученика
+            lesson_id = int(callback.data.replace('lesson_', ''))
+
+            lesson = await self.lesson_service.repo.get_lesson_by_id(lesson_id)
+
+            bot = Bot(token=TG_TOKEN)
+
+            lesson_media_group = [
+                InputMediaPhoto(media=screenshot.file_id)
+                for screenshot in lesson.lesson_screenshots
+            ]
+            await callback.message.answer(
+                f'<b>Конспект 📝:</b>',
+                parse_mode='HTML'
+            )
+            if lesson_media_group:
+                await bot.send_media_group(
+                    chat_id=callback.message.chat.id,
+                    media=lesson_media_group
+                )
+
+            if lesson.homework:
+
+                homework_media_group = [
+                    InputMediaPhoto(media=screenshot.file_id)
+                    for screenshot in lesson.homework.homework_screenshots
+                ]
+
+                await callback.message.answer(
+                    f'<b>Домашнее задание 📓:</b>',
+                    parse_mode='HTML'
+                )
+
+                if homework_media_group:
+                    await bot.send_media_group(
+                        chat_id=callback.message.chat.id,
+                        media=homework_media_group
+                    )
+
+            await callback.message.answer(
+                f'<b>Выберите действие 💬ale: </b>',
+                parse_mode='HTML',
+                reply_markup= await back_to_teacher_menu_keyboard()
+            )
+
+            await state.clear()
+
+
+
+
+
+
+
+
+
 
 
 

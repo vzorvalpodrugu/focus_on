@@ -14,7 +14,8 @@ class ScheduleRepository(BaseRepository):
             day: DaysEnum,
             time: str,
             duration: int,
-            cost: int
+            cost: int,
+            link: str | None
     ):
         async with self.session_factory() as session:
             schedule = Schedule(
@@ -24,7 +25,8 @@ class ScheduleRepository(BaseRepository):
                 day = day,
                 time = time,
                 duration = duration,
-                cost = cost
+                cost = cost,
+                link = link
             )
             session.add(schedule)
             await session.commit()
