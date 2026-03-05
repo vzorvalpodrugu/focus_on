@@ -53,7 +53,10 @@ class LessonViewHandler(BaseHandler):
 
             lessons = await self.lesson_service.repo.get_lessons_by_period(user_id=user.id, role=user.role, period_type=period)
 
+            lessons_id = []
+
             for lesson in lessons:
+                lessons_id.append(lesson.id)
                 await callback.message.answer(
                     f"<b>id занятия 🔑: </b>{lesson.id}\n\n"
                     f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
@@ -63,6 +66,8 @@ class LessonViewHandler(BaseHandler):
                     f'<b>Дата 📅: </b>{lesson.created_at}',
                     parse_mode='HTML'
                 )
+
+                await state.update_data(lessons_id=lessons_id)
 
             await callback.message.answer(
                 f"<b>Отправьте id занятия 🔑, которое хотели бы посмотреть!</b>",
@@ -108,6 +113,8 @@ class LessonViewHandler(BaseHandler):
                         f'<b>Дата 📅: </b>{lesson.created_at}',
                         parse_mode='HTML'
                     )
+
+                await state.update_data(lessons_id=lessons_id)
 
                 await callback.message.answer(
                     f"<b>Отправьте id занятия 🔑, которое хотели бы посмотреть!</b>",
