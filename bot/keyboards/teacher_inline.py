@@ -37,11 +37,22 @@ async def students_without_done_hw_keyboard(students: list[User]):
 
     return builder.as_markup()
 
-async def lessons_without_done_homework(lessons_id: list[Lesson]):
+async def lessons_without_done_homework(lessons_id: list[int]):
     builder = InlineKeyboardBuilder()
 
     for lesson_id in lessons_id:
         builder.button(text=f'Занятие {lesson_id} 🔑', callback_data=f'lesson_{lesson_id}')
+    builder.button(text='◀️ Назад', callback_data='back_to_teacher_menu')
+
+    builder.adjust(1, 1)
+
+    return builder.as_markup()
+
+
+async def teacher_view_one_more_lesson(student_id: int):
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='Выбрать другое занятие 🔑', callback_data=f'student_{student_id}')
     builder.button(text='◀️ Назад', callback_data='back_to_teacher_menu')
 
     builder.adjust(1, 1)

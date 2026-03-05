@@ -1,5 +1,7 @@
+from typing import Coroutine
+
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, InputMediaPhoto
+from aiogram.types import CallbackQuery, Message, InputMediaPhoto, InlineKeyboardMarkup
 from aiogram import F, Bot
 
 from bot.handlers.base_handler import BaseHandler
@@ -8,7 +10,7 @@ from bot.keyboards.lesson_view_inline import choosing_period_keyboard, choice_at
 from bot.keyboards.student_inline import back_to_student_menu, student_homework_keyboard
 from bot.config import TG_TOKEN
 from bot.keyboards.teacher_inline import students_without_done_hw_keyboard, back_to_teacher_menu_keyboard, \
-    lessons_without_done_homework
+    lessons_without_done_homework, teacher_view_one_more_lesson
 from bot.states.lesson_view_states import LessonViewStates
 from bot.states.register_done_homework import RegisterDoneHomework
 from bot.states.view_students_without_done_hw_state import ViewStudentsWithoutDoneHw
@@ -285,11 +287,21 @@ class LessonViewHandler(BaseHandler):
                         media=done_homework_media_group
                     )
 
+            kb = InlineKeyboardMarkup
+
+            if user.role == 'teacher':
+                kb = await teacher_view_one_more_lesson(lesson.student_id)
+                await state.set_state(ViewStudentsWithoutDoneHw.choosing_student)
+            elif user.role == 'student':
+                kb = back_to_menu_keyboard(role=user.role)
+
             await callback.message.answer(
-                text = f'<b>Выберите действие :</b>',
+                text = f'<b>Выберите действие 💬:</b>',
                 parse_mode='HTML',
-                reply_markup=await back_to_menu_keyboard(role=user.role)
+                reply_markup=kb
             )
+
+
 
         @self.router.callback_query(F.data == 'show_homeworks')
         async def process_show_homeworks(callback: CallbackQuery, state: FSMContext):
@@ -402,55 +414,6 @@ class LessonViewHandler(BaseHandler):
 
             await state.set_state(ViewStudentsWithoutDoneHw.choosing_lesson)
 
-
-        @self.router.callback_query(ViewStudentsWithoutDoneHw.choosing_lesson, F.data.startswith('lesson_'))
-        async def process_lesson_id(callback: CallbackQuery, state: FSMContext):
-            # 3. Отображение урока с невыполненной ДЗ ученика
-            lesson_id = int(callback.data.replace('lesson_', ''))
-
-            lesson = await self.lesson_service.repo.get_lesson_by_id(lesson_id)
-
-            bot = Bot(token=TG_TOKEN)
-
-            lesson_media_group = [
-                InputMediaPhoto(media=screenshot.file_id)
-                for screenshot in lesson.lesson_screenshots
-            ]
-            await callback.message.answer(
-                f'<b>Конспект 📝:</b>',
-                parse_mode='HTML'
-            )
-            if lesson_media_group:
-                await bot.send_media_group(
-                    chat_id=callback.message.chat.id,
-                    media=lesson_media_group
-                )
-
-            if lesson.homework:
-
-                homework_media_group = [
-                    InputMediaPhoto(media=screenshot.file_id)
-                    for screenshot in lesson.homework.homework_screenshots
-                ]
-
-                await callback.message.answer(
-                    f'<b>Домашнее задание 📓:</b>',
-                    parse_mode='HTML'
-                )
-
-                if homework_media_group:
-                    await bot.send_media_group(
-                        chat_id=callback.message.chat.id,
-                        media=homework_media_group
-                    )
-
-            await callback.message.answer(
-                f'<b>Выберите действие 💬ale: </b>',
-                parse_mode='HTML',
-                reply_markup= await back_to_teacher_menu_keyboard()
-            )
-
-            await state.clear()
 
 
 
