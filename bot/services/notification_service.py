@@ -3,8 +3,6 @@ from aiogram import Bot
 from bot.keyboards.student_inline import back_to_student_menu
 from bot.keyboards.teacher_inline import back_to_teacher_menu_keyboard
 from bot.repositories.schedule_repo import ScheduleRepository
-from bot.services.lesson_service import LessonService
-from bot.services.schedule_service import ScheduleService
 
 
 class NotificationService:
@@ -17,18 +15,36 @@ class NotificationService:
 
         for lesson in lessons:
             try:
+                student_text, teacher_text = '', ''
+                if lesson.link:
+                    student_text = (
+                        f"<b>Напоминание 🔔\n\n Урок с учителем {lesson.teacher.name} 👨‍🏫 \nПредмет {lesson.subject.name.value} 📚 \nЧерез 30 минут ⏰.</b>\n\n"
+                        f"<b>Ссылка на занятие: </b>\n{lesson.link}"
+                    )
+                    teacher_text = (
+                        f"<b>Напоминание 🔔\n\n Урок с учеником {lesson.student.name} 👨‍🎓 \nПредмет {lesson.subject.name.value} 📚 \nЧерез 30 минут ⏰.</b>"
+                        f"<b>Ссылка на занятие: </b>\n{lesson.link}"
+                    )
+                else:
+                    student_text = (
+                        f"<b>Напоминание 🔔\n\n Урок с учителем {lesson.teacher.name} 👨‍🏫 \nпо предмету {lesson.subject.name.value} 📚 \nчерез 30 минут ⏰.</b>\n\n"
+                    )
+                    teacher_text = (
+                        f"<b>Напоминание 🔔\n\n Урок с учеником {lesson.student.name} 👨‍🎓 \nПредмет {lesson.subject.name.value} 📚 \nЧерез 30 минут ⏰.</b>"
+                    )
+
                 await self.bot.send_message(
                     lesson.student.tg_id,
-                    f"<b>Напоминание 🔔\n\n Урок с учителем {lesson.teacher.name} 👨‍🏫 \nпо предмету {lesson.subject.name.value} 📚 \nчерез 30 минут.</b>",
+                    student_text,
                     parse_mode='HTML',
                     reply_markup= await back_to_student_menu()
                 )
 
                 await self.bot.send_message(
                     lesson.teacher.tg_id,
-                    f"Напоминание 🔔\n\n Урок с учеником {lesson.student.name} 👨‍🎓 \nпо предмету {lesson.subject.name.value} 📚 \nчерез 30 минут.",
-                parse_mode = 'HTML',
-                reply_markup = await back_to_teacher_menu_keyboard()
+                    teacher_text,
+                    parse_mode = 'HTML',
+                    reply_markup = await back_to_teacher_menu_keyboard()
                 )
             except Exception as e:
                 raise
