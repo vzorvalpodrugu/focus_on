@@ -67,7 +67,8 @@ class LessonViewHandler(BaseHandler):
                     f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
                     f"<b>Ученик 👨‍🎓: </b>{lesson.student.name} \n"
                     f"<b>Предмет 📚: </b>{lesson.subject.name.value} \n"
-                    f"<b>Тема 📝: </b>{lesson.topics}\n\n"
+                    f"<b>Тема 📝: </b>{lesson.topics}\n"
+                    f"<b>Количество вып-ых заданий 🏆:</b> {lesson.quantity_tasks}\n\n"
                     f'<b>Дата 📅: </b>{lesson.created_at}',
                     parse_mode='HTML'
                 )
@@ -114,7 +115,8 @@ class LessonViewHandler(BaseHandler):
                         f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
                         f"<b>Ученик 👨‍🎓: </b>{lesson.student.name} \n"
                         f"<b>Предмет 📚: </b>{lesson.subject.name.value} \n"
-                        f"<b>Тема 📝: </b>{lesson.topics}\n\n"
+                        f"<b>Тема 📝: </b>{lesson.topics}\n"
+                        f"<b>Количество вып-ых заданий 🏆:</b> {lesson.quantity_tasks}\n\n"
                         f'<b>Дата 📅: </b>{lesson.created_at}',
                         parse_mode='HTML'
                     )
@@ -323,7 +325,8 @@ class LessonViewHandler(BaseHandler):
                         f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
                         f"<b>Ученик 👨‍🎓: </b>{lesson.student.name} \n"
                         f"<b>Предмет 📚: </b>{lesson.subject.name.value} \n"
-                        f"<b>Тема 📝: </b>{lesson.topics}\n\n"
+                        f"<b>Тема 📝: </b>{lesson.topics}\n"
+                        f"<b>Количество вып-ых заданий 🏆:</b> {lesson.quantity_tasks}\n\n"
                         f'<b>Дата 📅: </b>{lesson.created_at}',
                         parse_mode='HTML'
                     )
@@ -400,7 +403,8 @@ class LessonViewHandler(BaseHandler):
                     f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
                     f"<b>Ученик 👨‍🎓: </b>{lesson.student.name} \n"
                     f"<b>Предмет 📚: </b>{lesson.subject.name.value} \n"
-                    f"<b>Тема 📝: </b>{lesson.topics}\n\n"
+                    f"<b>Тема 📝: </b>{lesson.topics}\n"
+                    f"<b>Количество вып-ых заданий 🏆:</b> {lesson.quantity_tasks}\n\n"
                     f'<b>Дата 📅: </b>{lesson.created_at}',
                     parse_mode='HTML'
                 )

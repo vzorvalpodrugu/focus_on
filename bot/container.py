@@ -1,5 +1,7 @@
+from aiogram import Bot
 from punq import Container, Scope
 
+from bot.config import TG_TOKEN
 from bot.database import async_session_maker
 from bot.handlers.lesson_create_handler import LessonCreateHandler
 from bot.handlers.lesson_view_handler import LessonViewHandler
@@ -17,6 +19,7 @@ from bot.repositories.subject_repository import SubjectRepository
 from bot.repositories.user_subject_repo import UserSubjectRepository
 from bot.services.homework_service import HomeworkService
 from bot.services.lesson_service import LessonService
+from bot.services.notification_service import NotificationService
 from bot.services.schedule_service import ScheduleService
 from bot.services.user_service import UserService
 from bot.handlers.start_handler import StartHandler
@@ -109,6 +112,15 @@ def get_container() -> Container:
         HomeworkService,
         instance=HomeworkService(
             homework_repo=container.resolve(HomeworkRepository)
+        ),
+        scope=Scope.singleton
+    )
+
+    container.register(
+        NotificationService,
+        instance=NotificationService(
+            bot = Bot(token=TG_TOKEN),
+            schedule_repo=container.resolve(ScheduleRepository)
         ),
         scope=Scope.singleton
     )

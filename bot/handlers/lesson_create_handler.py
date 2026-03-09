@@ -87,13 +87,32 @@ class LessonCreateHandler(BaseHandler):
 
             await state.update_data(topic=topic)
 
+            await state.set_state(RegisterLesson.choosing_quantity_tasks)
+
+            await message.answer(
+                f'<b>Пришлите количество выполненных заданий 📝 в чат:</b>\n\n'
+                f'<b>Например: 12</b>',
+                parse_mode='HTML',
+                reply_markup= await back_to_teacher_menu_keyboard()
+            )
+
+        @self.router.message(RegisterLesson.choosing_quantity_tasks)
+        async def process_quantity_tasks(message: Message, state: FSMContext):
+            # 5. Ввод выполненных заданий для статистики
+            try:
+                quantity_tasks = int(message.text)
+            except Exception as e:
+                raise
+
+            await state.update_data(quantity_tasks=quantity_tasks)
+
             await state.set_state(RegisterLesson.waiting_for_lesson_screenshots)
 
             await message.answer(
                 f'<b>Пришлите конспект 📝 занятия в виде скриншотов: </b>\n\n'
                 f'<b>Можно прислать сразу несколько!</b>',
                 parse_mode='HTML',
-                reply_markup= await back_to_teacher_menu_keyboard()
+                reply_markup=await back_to_teacher_menu_keyboard()
             )
 
         @self.router.message(RegisterLesson.waiting_for_lesson_screenshots, F.photo)
@@ -583,6 +602,7 @@ class LessonCreateHandler(BaseHandler):
         subject = data.get('subject')
 
         topics = data['topic']
+        quantity_tasks = data['quantity_tasks']
         screenshots = data.get('screenshots')
         homework_screenshots = data.get('homework_screenshots')
 
@@ -591,8 +611,10 @@ class LessonCreateHandler(BaseHandler):
             subject_id = subject_id,
             teacher_id = teacher_id,
             topics = topics,
-            screenshots = screenshots
+            screenshots = screenshots,
+            quantity_tasks = quantity_tasks
         )
+
         homework_success = ''
         if homework_screenshots:
             homework = await self.homework_service.repo.create_homework(
@@ -617,6 +639,8 @@ class LessonCreateHandler(BaseHandler):
             f"<b>Учитель 👨‍🏫:</b> {teacher.name} \n"
             f"<b>Ученик 👨‍🎓: </b>{student.name} \n"
             f"<b>Предмет 📚: </b>{subject.name.value} \n"
+            f"<b>Тема 🏷️: </b>{lesson.topics}\n"
+            f"<b>Количество вып-ых заданий 🏆</b>: {lesson.quantity_tasks}\n"
             f"<b>Конспект 📝: </b>✅\n"
             f"<b>ДЗ 📌: </b>{homework_success}\n\n"
             f'<b>Дата 📅: </b>{lesson.created_at}',

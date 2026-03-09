@@ -1,6 +1,9 @@
 import asyncio
 import logging
 import os
+
+import pytz
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -13,6 +16,7 @@ from bot.handlers.teacher_schedules_handler import TeacherSchedulesHandler
 from bot.middlewares.album_middleware import AlbumMiddleware
 from bot.services.homework_service import HomeworkService
 from bot.services.lesson_service import LessonService
+from bot.services.notification_service import NotificationService
 from bot.services.schedule_service import ScheduleService
 from bot.services.user_service import UserService
 from bot.container import get_container
@@ -31,6 +35,21 @@ async def main():
     bot = Bot(token=tg_token)
     dp = Dispatcher(storage=storage)
     container = get_container()
+
+
+    notification_service = container.resolve(NotificationService)
+
+    scheduler = AsyncIOScheduler(timezone=pytz.timezone('Europe/Moscow'))
+
+    scheduler.add_job(
+        notification_service.check_and_send_reminders,
+        trigger='cron',
+        minute='*',
+        second=0
+    )
+
+
+    scheduler.start()
 
     start_handler = container.resolve(StartHandler)
     teacher_handler = container.resolve(MainTeacherHandler)
@@ -54,7 +73,8 @@ async def main():
             user_service=container.resolve(UserService),
             schedule_service=container.resolve(ScheduleService),
             lesson_service=container.resolve(LessonService),
-            homework_service=container.resolve(HomeworkService)
+            homework_service=container.resolve(HomeworkService),
+            notification_service=notification_service
         )
 
     logger.info('Bot have been run')

@@ -161,10 +161,10 @@ class Lesson(Base):
     student_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), index=True)
     subject_id = Column(Integer, ForeignKey('subjects.id', ondelete="CASCADE"))
     teacher_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"))
-    topics = Column(String(100), nullable=False)
     homework_id = Column(Integer, ForeignKey('homeworks.id', ondelete="CASCADE"), nullable=True)
 
-    is_active = Column(Boolean, default=True)
+    topics = Column(String(100), nullable=False)
+    quantity_tasks = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.now())
 
     lesson_screenshots = relationship('LessonScreenshots', order_by='LessonScreenshots.order', back_populates='lesson')

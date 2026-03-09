@@ -34,6 +34,7 @@ class LessonRepository(BaseRepository):
             subject_id: int,
             teacher_id: int,
             topics: str,
+            quantity_tasks: int,
             screenshots: list[dict]
     ):
         async with self.session_factory() as session:
@@ -42,7 +43,8 @@ class LessonRepository(BaseRepository):
                 student_id = student_id,
                 subject_id = subject_id,
                 teacher_id = teacher_id,
-                topics = topics
+                topics = topics,
+                quantity_tasks = quantity_tasks
             )
 
             session.add(lesson)
