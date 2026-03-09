@@ -11,26 +11,26 @@ class NotificationService:
         self.schedule_repo = schedule_repo
 
     async def check_and_send_reminders(self):
-        lessons = await self.schedule_repo.get_upcoming_lessons(minutes=58)
+        lessons = await self.schedule_repo.get_upcoming_lessons(minutes=0)
 
         for lesson in lessons:
             try:
                 student_text, teacher_text = '', ''
                 if lesson.link:
                     student_text = (
-                        f"<b>Напоминание 🔔\n\n Урок с учителем {lesson.teacher.name} 👨‍🏫 \nПредмет {lesson.subject.name.value} 📚 \nЧерез 30 минут ⏰.</b>\n\n"
-                        f"<b>Ссылка на занятие: </b>\n{lesson.link}"
+                        f"<b>Напоминание 🔔\n\n Урок с учителем 👨‍🏫:</b> {lesson.teacher.name}\n<b>Предмет 📚: </b>{lesson.subject.name.value}\n<b>Через 30 минут ⏰</b>\n\n"
+                        f"<b>Ссылка на занятие 📺: </b>\n{lesson.link}"
                     )
                     teacher_text = (
-                        f"<b>Напоминание 🔔\n\n Урок с учеником {lesson.student.name} 👨‍🎓 \nПредмет {lesson.subject.name.value} 📚 \nЧерез 30 минут ⏰.</b>"
-                        f"<b>Ссылка на занятие: </b>\n{lesson.link}"
+                        f"<b>Напоминание 🔔\n\n Урок с учеником 👨‍🎓:</b> {lesson.student.name}\n<b>Предмет 📚: </b>{lesson.subject.name.value}\n<b>Через 30 минут ⏰\n\n</b>"
+                        f"<b>Ссылка на занятие 📺: </b>\n{lesson.link}"
                     )
                 else:
                     student_text = (
-                        f"<b>Напоминание 🔔\n\n Урок с учителем {lesson.teacher.name} 👨‍🏫 \nпо предмету {lesson.subject.name.value} 📚 \nчерез 30 минут ⏰.</b>\n\n"
+                        f"<b>Напоминание 🔔\n\n Урок с учителем 👨‍🏫:</b> {lesson.teacher.name}\n<b>Предмет 📚: </b>{lesson.subject.name.value}\n<b>Через 30 минут ⏰</b>\n\n"
                     )
                     teacher_text = (
-                        f"<b>Напоминание 🔔\n\n Урок с учеником {lesson.student.name} 👨‍🎓 \nПредмет {lesson.subject.name.value} 📚 \nЧерез 30 минут ⏰.</b>"
+                        f"<b>Напоминание 🔔\n\n Урок с учеником 👨‍🎓:</b> {lesson.student.name}\n<b>Предмет 📚: </b>{lesson.subject.name.value}\n<b>Через 30 минут ⏰\n\n</b>"
                     )
 
                 await self.bot.send_message(

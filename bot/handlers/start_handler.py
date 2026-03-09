@@ -1,6 +1,7 @@
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
+from bot.config import actual_teacher_tg_ids
 from bot.database import async_session_maker
 from bot.handlers.base_handler import BaseHandler
 from aiogram.filters import Command
@@ -48,16 +49,19 @@ class StartHandler(BaseHandler):
 
                 keyboard = await teacher_inline() if user.role == 'teacher' else await student_inline()
                 await message.answer(
-                     f"👋 С возвращением, {user.name}!\n"
-                    f"Вы зарегистрированы как {role}.",
+                     f"<b>Приветствую 👋, </b>{user.name}!\n"
+                    f"<b>Вы зарегистрированы как </b> {role}"
+                    f"<b>Выберите действие: 💬</b>",
+                    parse_mode = 'HTML',
                     reply_markup=keyboard
                 )
                 return
 
             await state.set_state(RegisterStates.choosing_role)
             await message.answer(
-                "👋 Добро пожаловать!\n\n"
-                "Выберите вашу роль:",
+                "<b>👋 Добро пожаловать!</b>\n\n"
+                "<b>Выберите вашу роль:</b>",
+                parse_mode='HTML',
                 reply_markup=role_keyboard()
             )
 
@@ -65,12 +69,25 @@ class StartHandler(BaseHandler):
         @self.router.callback_query(RegisterStates.choosing_role, F.data.startswith('role_'))
         async def process_role(callback: CallbackQuery, state: FSMContext):
             role = callback.data.replace('role_', '')
+            user_tg_id = callback.from_user.id
+
+            if role == 'teacher' and user_tg_id not in actual_teacher_tg_ids:
+                await state.set_state(RegisterStates.choosing_role)
+                await callback.message.answer(
+                    "<b>К сожалению, вы не можете зарегистрироваться учителем 🚫</b>\n"
+                    "<b>Уточните в поддержке!\n\n</b>"
+                    "Выберите вашу роль:",
+                    parse_mode='HTML',
+                    reply_markup=role_keyboard()
+                )
+                return
 
             await state.update_data(role=role)
             await state.set_state(RegisterStates.entering_name)
 
             await callback.message.edit_text(
-                "📝 Введите ваше имя:",
+                "<b>📝 Введите ваше имя:</b>",
+                parse_mode = 'HTML',
                 reply_markup=back_keyboard()
             )
 
@@ -89,14 +106,18 @@ class StartHandler(BaseHandler):
                 await state.set_state(RegisterStates.choosing_class)
                 await message.answer(
                     f"📚 {name}, в каком вы классе?",
+                    parse_mode = 'HTML',
                     reply_markup=class_number_keyboard()
                 )
-            else:
+            elif data['role'] == 'teacher':
                 await state.set_state(RegisterStates.choosing_subjects)
                 await message.answer(
                     f"📚 {name}, выберите, какие предметы Вы будете преподавать?",
+                    parse_mode = 'HTML',
                     reply_markup=await subjects_keyboard()
                 )
+
+
         # 4. Выбор класса
         @self.router.callback_query(RegisterStates.choosing_class, F.data.startswith('class_'))
         async def process_class(callback: CallbackQuery, state: FSMContext):
