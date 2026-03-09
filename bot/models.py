@@ -55,9 +55,9 @@ class TeacherStudent(Base):
     __tablename__ = 'teacher_student'
 
     id = Column(Integer, primary_key=True)
-    student_id = Column(Integer, ForeignKey('users.id'))
-    teacher_id = Column(Integer, ForeignKey('users.id'))
-    subject_id = Column(Integer, ForeignKey('subjects.id'))
+    student_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"))
+    teacher_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"))
+    subject_id = Column(Integer, ForeignKey('subjects.id', ondelete="CASCADE"))
 
     student = relationship("User", foreign_keys=[student_id])
     subject = relationship("Subject", foreign_keys=[subject_id])
@@ -90,9 +90,9 @@ class Schedule(Base):
     __tablename__ = 'schedules'
 
     id = Column(Integer, primary_key=True)
-    teacher_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
-    student_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
-    subject_id = Column(Integer, ForeignKey('subjects.id'), nullable=False, index=True)
+    teacher_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
+    subject_id = Column(Integer, ForeignKey('subjects.id', ondelete="CASCADE"), nullable=False, index=True)
     day = Column(Enum(DaysEnum), nullable=False)
     time = Column(String, nullable=False)
     duration = Column(Integer, nullable=False)
@@ -107,9 +107,9 @@ class Homework(Base):
     __tablename__ = 'homeworks'
 
     id = Column(Integer, primary_key=True)
-    student_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    subject_id = Column(Integer, ForeignKey('subjects.id'), nullable=False)
-    teacher_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    student_id = Column(Integer, ForeignKey('users.id' , ondelete="CASCADE"), nullable=False)
+    subject_id = Column(Integer, ForeignKey('subjects.id', ondelete="CASCADE"), nullable=False)
+    teacher_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
     topics = Column(String(100), nullable=False)
 
 
@@ -125,7 +125,7 @@ class HomeworkScreenshots(Base):
     __tablename__ = 'homework_screenshots'
 
     id = Column(Integer, primary_key=True)
-    homework_id = Column(Integer, ForeignKey('homeworks.id'))
+    homework_id = Column(Integer, ForeignKey('homeworks.id', ondelete="CASCADE"))
     file_id = Column(String(100), nullable=False)
     order = Column(Integer, default=0)
 
@@ -135,9 +135,9 @@ class DoneHomework(Base):
     __tablename__ = 'done_homeworks'
 
     id = Column(Integer, primary_key=True)
-    homework_id = Column(Integer, ForeignKey('homeworks.id'), nullable=False)
-    lesson_id = Column(Integer, ForeignKey('lessons.id'), nullable=False)
-    student_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    homework_id = Column(Integer, ForeignKey('homeworks.id', ondelete="CASCADE"), nullable=False)
+    lesson_id = Column(Integer, ForeignKey('lessons.id', ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
 
 
     lesson = relationship('Lesson', back_populates='done_homework')
@@ -148,7 +148,7 @@ class DoneHomeworkScreenshots(Base):
     __tablename__ = 'done_homework_screenshots'
 
     id = Column(Integer, primary_key=True)
-    done_homework_id = Column(Integer, ForeignKey('done_homeworks.id'))
+    done_homework_id = Column(Integer, ForeignKey('done_homeworks.id', ondelete="CASCADE"))
     file_id = Column(String(100), nullable=False)
     order = Column(Integer, default=0)
 
@@ -158,11 +158,12 @@ class Lesson(Base):
     __tablename__ = 'lessons'
 
     id = Column(Integer, primary_key=True)
-    student_id = Column(Integer, ForeignKey('users.id'), index=True)
-    subject_id = Column(Integer, ForeignKey('subjects.id'))
-    teacher_id = Column(Integer, ForeignKey('users.id'))
+    student_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), index=True)
+    subject_id = Column(Integer, ForeignKey('subjects.id', ondelete="CASCADE"))
+    teacher_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"))
     topics = Column(String(100), nullable=False)
-    homework_id = Column(Integer, ForeignKey('homeworks.id'), nullable=True)
+    homework_id = Column(Integer, ForeignKey('homeworks.id', ondelete="CASCADE"), nullable=True)
+
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.now())
 
@@ -194,7 +195,7 @@ class LessonScreenshots(Base):
     __tablename__ = 'lesson_screenshots'
 
     id = Column(Integer, primary_key=True)
-    lesson_id = Column(Integer, ForeignKey('lessons.id'))
+    lesson_id = Column(Integer, ForeignKey('lessons.id', ondelete="CASCADE"))
     file_id = Column(String(100), nullable=False)
     order = Column(Integer, default=0)
 

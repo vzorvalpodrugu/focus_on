@@ -293,7 +293,7 @@ class LessonViewHandler(BaseHandler):
                 kb = await teacher_view_one_more_lesson(lesson.student_id)
                 await state.set_state(ViewStudentsWithoutDoneHw.choosing_student)
             elif user.role == 'student':
-                kb = back_to_menu_keyboard(role=user.role)
+                kb = await back_to_menu_keyboard(role=user.role)
 
             await callback.message.answer(
                 text = f'<b>Выберите действие 💬:</b>',
