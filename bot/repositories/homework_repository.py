@@ -1,6 +1,6 @@
 from bot.models import Homework, HomeworkScreenshots, DoneHomework, DoneHomeworkScreenshots
 from bot.repositories.base_repository import BaseRepository
-
+from sqlalchemy import update
 
 class HomeworkRepository(BaseRepository):
 
@@ -69,4 +69,15 @@ class HomeworkRepository(BaseRepository):
 
             return done_homework
 
+    async def add_mark_to_done_homework(self, done_homework_id: int, mark: int):
+        async with self.session_factory() as session:
+            await session.execute(
+                update(DoneHomework)
+                .where(
+                    DoneHomework.id == done_homework_id
+                )
+                .values(mark = mark)
+            )
+
+            await session.commit()
 

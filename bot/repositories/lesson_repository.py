@@ -51,6 +51,27 @@ class LessonRepository(BaseRepository):
 
             return list(result.scalars().all())
 
+    async def get_lessons_without_marked_hw(self, teacher_id: int) -> list[Lesson]:
+        # Получить уроки, без проверенного ДЗ учителем
+        async with self.session_factory() as session:
+            result = await session.execute(
+                select(Lesson)
+                .options(
+                    selectinload(Lesson.teacher),
+                    selectinload(Lesson.student),
+                    selectinload(Lesson.subject),
+                    selectinload(Lesson.homework).selectinload(Homework.homework_screenshots),
+                    selectinload(Lesson.done_homework).selectinload(DoneHomework.done_homework_screenshots),
+                    selectinload(Lesson.lesson_screenshots)
+                )
+                .where(
+                    DoneHomework.mark == None
+                )
+            )
+
+            return list(result.scalars().all())
+
+
     async def create_lesson(
             self,
             student_id: int,

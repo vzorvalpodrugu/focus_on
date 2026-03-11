@@ -20,6 +20,7 @@ async def teacher_homeworks_keyboard():
 
     builder.button(text='Ученики без ДЗ 📓', callback_data='show_students_without_hw')
     builder.button(text='Ученики без выполненного ДЗ 📓⚠️', callback_data='show_students_without_done_hw')
+    builder.button(text='Непроверенные ДЗ 📓⚠️', callback_data = 'show_lessons_without_marked_hw')
     builder.button(text='◀️ Назад', callback_data='back_to_teacher_menu')
 
     builder.adjust(1, 1)
@@ -65,6 +66,43 @@ async def teacher_lessons_without_hw(lessons: list[Lesson]):
 
     for lesson in lessons:
         builder.button(text=f'Занятие {lesson.id} 🔑', callback_data=f'lesson_{lesson.id}')
+
+    builder.button(text='◀️ Назад', callback_data='back_to_teacher_menu')
+
+    builder.adjust(1, 1)
+
+    return builder.as_markup()
+
+
+async def choose_mark_or_another_lesson_keyboard():
+    builder = InlineKeyboardBuilder()
+
+    builder.button(text='Поставить оценку ➕', callback_data='add_mark')
+    builder.button(text='Выбрать другое занятие 🔑', callback_data='show_lessons_without_marked_hw')
+    builder.button(text='◀️ Назад', callback_data='back_to_teacher_menu')
+
+    builder.adjust(1, 1)
+
+
+    return builder.as_markup()
+
+
+async def choose_mark_keyboard():
+    builder = InlineKeyboardBuilder()
+
+    for i in range(0, 11):
+        postfix = ''
+
+        if i < 4:
+            postfix = '❌'
+        elif (i >= 4) and i < 7:
+            postfix = '😐'
+        elif (i >= 7) and i < 9:
+            postfix = '👍'
+        elif (i >= 9) and i < 11:
+            postfix = '🏆'
+
+        builder.button(text = f'{i} {postfix}', callback_data=f'mark_{i}')
 
     builder.button(text='◀️ Назад', callback_data='back_to_teacher_menu')
 

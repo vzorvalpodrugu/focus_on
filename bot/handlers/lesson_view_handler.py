@@ -1,3 +1,4 @@
+
 from typing import Coroutine
 
 from aiogram.fsm.context import FSMContext
@@ -10,7 +11,9 @@ from bot.keyboards.lesson_view_inline import choosing_period_keyboard, choice_at
 from bot.keyboards.student_inline import back_to_student_menu, student_homework_keyboard
 from bot.config import TG_TOKEN
 from bot.keyboards.teacher_inline import students_without_done_hw_keyboard, back_to_teacher_menu_keyboard, \
-    lessons_without_done_homework, teacher_view_one_more_lesson
+    lessons_without_done_homework, teacher_view_one_more_lesson, teacher_lessons_without_hw, \
+    choose_mark_or_another_lesson_keyboard, choose_mark_keyboard
+from bot.states.add_mark_to_homework import AddMarkToHomework
 from bot.states.lesson_view_states import LessonViewStates
 from bot.states.register_done_homework import RegisterDoneHomework
 from bot.states.view_students_without_done_hw_state import ViewStudentsWithoutDoneHw
@@ -24,6 +27,145 @@ class LessonViewHandler(BaseHandler):
         self.homework_service = homework_service
 
     def _register_handlers(self):
+
+
+        # -----------------------------------------------------------------
+        # Логика добавления оценки к ДЗ
+        # -----------------------------------------------------------------
+
+
+        @self.router.callback_query(F.data == 'show_lessons_without_marked_hw')
+        @self.router.callback_query(AddMarkToHomework.choosing_lesson, F.data == 'show_lessons_without_marked_hw')
+        async def process_lessons(callback: CallbackQuery, state: FSMContext):
+            # 1. Выбор урока
+            teacher_tg_id = callback.from_user.id
+
+            await state.set_state(AddMarkToHomework.choosing_lesson)
+
+            teacher = await self.user_service.get_by_tg_id(teacher_tg_id)
+
+            lessons = await self.lesson_service.repo.get_lessons_without_marked_hw(teacher.id)
+
+            for lesson in lessons:
+                await callback.message.answer(
+                    f"<b>id занятия 🔑: </b>{lesson.id}\n\n"
+                    f"<b>Учитель 👨‍🏫:</b> {lesson.teacher.name} \n"
+                    f"<b>Ученик 👨‍🎓: </b>{lesson.student.name} \n"
+                    f"<b>Предмет 📚: </b>{lesson.subject.name.value} \n"
+                    f"<b>Тема 📝: </b>{lesson.topics}\n"
+                    f"<b>Количество вып-ых заданий 🏆:</b> {lesson.quantity_tasks}\n\n"
+                    f'<b>Дата 📅: </b>{lesson.created_at}',
+                    parse_mode='HTML',
+                    reply_markup=await teacher_lessons_without_hw(lessons)
+                )
+
+
+
+        @self.router.callback_query(AddMarkToHomework.choosing_lesson, F.data.startswith('lesson_'))
+        async def process_lesson(callback: CallbackQuery, state: FSMContext):
+            # 2. Отображение урока
+
+            await state.set_state(AddMarkToHomework.choosing_mark)
+
+            lesson_id = int(callback.data.replace('lesson_', ''))
+
+            lesson = await self.lesson_service.repo.get_lesson_by_id(lesson_id)
+
+            bot = Bot(token=TG_TOKEN)
+
+            lesson_media_group = [
+                InputMediaPhoto(media=screenshot.file_id)
+                for screenshot in lesson.lesson_screenshots
+            ]
+
+            await state.update_data(lesson=lesson)
+
+            await callback.message.answer(
+                f'<b>Конспект 📝:</b>',
+                parse_mode='HTML'
+            )
+            if lesson_media_group:
+                await bot.send_media_group(
+                    chat_id=callback.message.chat.id,
+                    media=lesson_media_group
+                )
+
+            if lesson.homework:
+
+                homework_media_group = [
+                    InputMediaPhoto(media=screenshot.file_id)
+                    for screenshot in lesson.homework.homework_screenshots
+                ]
+
+                await callback.message.answer(
+                    f'<b>Домашнее задание 📓:</b>',
+                    parse_mode='HTML'
+                )
+
+                if homework_media_group:
+                    await bot.send_media_group(
+                        chat_id=callback.message.chat.id,
+                        media=homework_media_group
+                    )
+
+            if lesson.done_homework:
+
+                done_homework_media_group = [
+                    InputMediaPhoto(media=screenshot.file_id)
+                    for screenshot in lesson.done_homework.done_homework_screenshots
+                ]
+
+                await callback.message.answer(
+                    f'<b>Выполненное домашнее задание 📓:</b>',
+                    parse_mode='HTML'
+                )
+
+                if done_homework_media_group:
+                    await bot.send_media_group(
+                        chat_id=callback.message.chat.id,
+                        media=done_homework_media_group
+                    )
+
+                await callback.message.answer(
+                    f'<b>Выберите действие 💬</b>',
+                    parse_mode = 'HTML',
+                    reply_markup=await choose_mark_or_another_lesson_keyboard()
+                )
+
+
+
+        @self.router.callback_query(AddMarkToHomework.choosing_mark, F.data == 'add_mark')
+        async def process_lesson(callback: CallbackQuery, state: FSMContext):
+            # 3. Добавление оценки
+            await state.set_state(AddMarkToHomework.choosing_mark)
+
+            await callback.message.answer(
+                f"<b>Выберите оценку 🏆: </b>",
+                parse_mode = 'HTML',
+                reply_markup = await choose_mark_keyboard()
+            )
+
+        @self.router.callback_query(AddMarkToHomework.choosing_mark, F.data.startswith('mark_'))
+        async def process_lesson(callback: CallbackQuery, state: FSMContext):
+            # 4. Выбор оценки
+            mark = int(callback.data.replace('mark_', ''))
+
+            lesson = (await state.get_data()).get('lesson')
+
+            done_homework_id = lesson.done_homework.id
+
+            await self.homework_service.repo.add_mark_to_done_homework(
+                done_homework_id = done_homework_id,
+                mark = mark,
+            )
+
+            await callback.message.answer(
+                f'<b>Оценка успешно добавлена! ✅</b>',
+                parse_mode = 'HTML',
+                reply_markup= await back_to_teacher_menu_keyboard()
+            )
+
+            await state.clear()
 
         # ------------------------------------------------------
         # Отображение занятий
@@ -417,8 +559,6 @@ class LessonViewHandler(BaseHandler):
             )
 
             await state.set_state(ViewStudentsWithoutDoneHw.choosing_lesson)
-
-
 
 
 

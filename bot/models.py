@@ -138,7 +138,7 @@ class DoneHomework(Base):
     homework_id = Column(Integer, ForeignKey('homeworks.id', ondelete="CASCADE"), nullable=False)
     lesson_id = Column(Integer, ForeignKey('lessons.id', ondelete="CASCADE"), nullable=False)
     student_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
-
+    mark = Column(Integer, default=None)
 
     lesson = relationship('Lesson', back_populates='done_homework')
     done_homework_screenshots = relationship('DoneHomeworkScreenshots', order_by='DoneHomeworkScreenshots.order',
@@ -151,6 +151,7 @@ class DoneHomeworkScreenshots(Base):
     done_homework_id = Column(Integer, ForeignKey('done_homeworks.id', ondelete="CASCADE"))
     file_id = Column(String(100), nullable=False)
     order = Column(Integer, default=0)
+
 
     done_homework = relationship('DoneHomework', back_populates='done_homework_screenshots')
 
