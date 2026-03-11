@@ -6,12 +6,13 @@ from bot.repositories.schedule_repo import ScheduleRepository
 
 
 class NotificationService:
-    def __init__(self, bot: Bot, schedule_repo: ScheduleRepository):
+    def __init__(self, bot: Bot, schedule_repo: ScheduleRepository, lesson_repo):
         self.bot = bot
         self.schedule_repo = schedule_repo
+        self.lesson_repo = lesson_repo
 
-    async def check_and_send_reminders(self):
-        lessons = await self.schedule_repo.get_upcoming_lessons(minutes=0)
+    async def send_reminders_about_lesson(self):
+        lessons = await self.schedule_repo.get_upcoming_lessons(minutes=30)
 
         for lesson in lessons:
             try:
@@ -46,5 +47,34 @@ class NotificationService:
                     parse_mode = 'HTML',
                     reply_markup = await back_to_teacher_menu_keyboard()
                 )
+            except Exception as e:
+                raise
+
+    async def send_reminders_about_homework(self):
+        schedules = await self.schedule_repo.get_upcoming_lessons(minutes=180)
+
+        for schedule in schedules:
+            teacher_id = schedule.teacher.id
+            student_id = schedule.student.id
+            subject_id = schedule.subject.id
+
+            try:
+                lessons = await self.lesson_repo.get_lessons(
+                    teacher_id = teacher_id,
+                    student_id = student_id,
+                    subject_id = subject_id,
+                )
+
+                for lesson in lessons:
+
+                    if lesson.done_homework is None:
+                        await self.bot.send_message(
+                            lesson.student.tg_id,
+                            f"<b>Напоминание 🔔\n\n К ближайшему занятию по {lesson.subject.name.value} 📚 у вас не выполнено ДЗ 📓!\n\n</b>"
+                            f"<b>Поспешите выполнить и отправить!</b>",
+                            parse_mode='HTML',
+                            reply_markup=await back_to_student_menu()
+                        )
+
             except Exception as e:
                 raise

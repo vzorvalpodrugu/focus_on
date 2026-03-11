@@ -120,7 +120,8 @@ def get_container() -> Container:
         NotificationService,
         instance=NotificationService(
             bot = Bot(token=TG_TOKEN),
-            schedule_repo=container.resolve(ScheduleRepository)
+            schedule_repo=container.resolve(ScheduleRepository),
+            lesson_repo=container.resolve(LessonRepository)
         ),
         scope=Scope.singleton
     )

@@ -27,6 +27,29 @@ class LessonRepository(BaseRepository):
 
             return result.scalar_one_or_none()
 
+    async def get_lessons(self, teacher_id: int, student_id: int, subject_id: int) -> list[Lesson]:
+        # Получить уроки по данным
+        async with self.session_factory() as session:
+            result = await session.execute(
+                select(Lesson)
+                .options(
+                    selectinload(Lesson.teacher),
+                    selectinload(Lesson.student),
+                    selectinload(Lesson.subject),
+                    selectinload(Lesson.homework).selectinload(Homework.homework_screenshots),
+                    selectinload(Lesson.done_homework).selectinload(DoneHomework.done_homework_screenshots),
+                    selectinload(Lesson.lesson_screenshots)
+                )
+                .where(
+                    and_(
+                        Lesson.teacher_id == teacher_id,
+                        Lesson.student_id == student_id,
+                        Lesson.subject_id == subject_id
+                    )
+                )
+            )
+
+            return list(result.scalars().all())
 
     async def create_lesson(
             self,

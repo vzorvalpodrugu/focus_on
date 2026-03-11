@@ -42,7 +42,14 @@ async def main():
     scheduler = AsyncIOScheduler(timezone=pytz.timezone('Europe/Moscow'))
 
     scheduler.add_job(
-        notification_service.check_and_send_reminders,
+        notification_service.send_reminders_about_lesson,
+        trigger='cron',
+        minute='*',
+        second=0
+    )
+
+    scheduler.add_job(
+        notification_service.send_reminders_about_homework,
         trigger='cron',
         minute='*',
         second=0
